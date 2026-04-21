@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cuidar+ | Prontuário Médico 100% Digital</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">
+            <img src="./logo-cuidar.png" alt="Logo Cuidar+" />
+          </div>
+          <div>
+            <h1>Cuidar<span class="plus">+</span></h1>
+            <p>Prontuário Médico 100% Digital</p>
+          </div>
+        </div>
+
+        <nav class="menu">
+          <a class="menu-primary menu-link" href="#patient-form">Novo receituário</a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <p>Seus dados estão protegidos</p>
+          <small>Boas práticas de segurança da informação em saúde.</small>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div class="topbar-actions">
+            <button class="ghost" type="button">Ajuda</button>
+            <button class="ghost" type="button">Salvar rascunho</button>
+            <button class="solid" type="button">Gerar documento</button>
+          </div>
+        </header>
+
+        <section class="steps">
+          <div class="step active"><span>1</span> Dados do paciente</div>
+          <div class="step"><span>2</span> Avaliação e exames</div>
+          <div class="step"><span>3</span> Documento e exportação</div>
+        </section>
+
+        <main class="content-grid">
+          <section class="main-column">
+            <section class="panel">
+              <div class="panel-head">
+                <h2>Dados do paciente</h2>
+              </div>
+
+              <form id="patient-form">
+                <div class="grid">
+                  <label>
+                    Nome do médico
+                    <input id="doctor-name" type="text" placeholder="Ex.: Dr. João da Silva" />
+                  </label>
+                  <label>
+                    CRM
+                    <input id="doctor-crm" type="text" placeholder="Ex.: CRM-PE 12345" />
+                  </label>
+                  <label>
+                    Nome do paciente
+                    <input id="patient-name" type="text" placeholder="Ex.: Maria de Souza" />
+                  </label>
+                  <label>
+                    CPF do paciente
+                    <input id="patient-cpf" type="text" placeholder="Ex.: 000.000.000-00" />
+                  </label>
+                </div>
+
+                <div class="grid">
+                  <label>
+                    Sexo
+                    <select id="sex" required>
+                      <option value="">Selecione</option>
+                      <option value="feminino">Feminino</option>
+                      <option value="masculino">Masculino</option>
+                      <option value="outro">Outro</option>
+                    </select>
+                  </label>
+                  <label>
+                    Idade (anos)
+                    <input id="age" type="number" min="0" max="120" required />
+                  </label>
+                  <label>
+                    Peso (kg)
+                    <input id="weight" type="number" min="1" step="0.1" required />
+                  </label>
+                  <label>
+                    Altura (m)
+                    <input id="height" type="number" min="0.5" max="2.5" step="0.01" required />
+                  </label>
+                </div>
+
+                <fieldset>
+                  <legend>Comorbidades e fatores de risco</legend>
+                  <div class="checks">
+                    <label><input class="comorbidity-input" type="checkbox" value="has" /> Hipertensão arterial</label>
+                    <label><input class="comorbidity-input" type="checkbox" value="dm2" /> Diabetes mellitus</label>
+                    <label><input class="comorbidity-input" type="checkbox" value="tabagismo" /> Tabagismo</label>
+                    <label><input class="comorbidity-input" type="checkbox" value="dcv" /> Doença cardiovascular</label>
+                    <label><input class="comorbidity-input" type="checkbox" value="drf" /> Histórico familiar relevante (DM2/DCV)</label>
+                    <label><input class="comorbidity-input" type="checkbox" value="obesidade" /> Obesidade prévia/conhecida</label>
+                  </div>
+                </fieldset>
+
+                <div class="actions">
+                  <button type="submit">Gerar recomendações</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel">
+              <h2>Classificação e conduta</h2>
+              <label class="full">
+                CID-11 ou outra classificação usada na APS
+                <input id="classification" type="text" list="classification-options" placeholder="Ex.: 5A11, Diabetes tipo 2, T90..." />
+              </label>
+              <datalist id="classification-options"></datalist>
+              <div id="classification-match" class="muted"></div>
+
+              <div class="dictionary-tools">
+                <button id="import-dict-btn" type="button">Importar dicionário local (JSON/CSV)</button>
+                <button id="reset-dict-btn" type="button">Restaurar dicionário padrão</button>
+                <input id="dict-file-input" type="file" accept=".json,.csv,text/csv,application/json" hidden />
+                <span id="dict-count" class="muted"></span>
+              </div>
+
+              <label class="full">
+                Campo adicional (atestado, medicações, orientações)
+                <textarea
+                  id="notes"
+                  rows="4"
+                  placeholder="Ex.: Atestado de 2 dias. Prescrito losartana 50 mg 12/12h. Orientado retorno em 30 dias."
+                ></textarea>
+              </label>
+            </section>
+
+            <section class="panel" id="final-report">
+              <h2>Documento do atendimento</h2>
+              <pre id="report-content" class="report-pre">Preencha os campos para gerar o documento final.</pre>
+            </section>
+          </section>
+
+          <aside class="side-column">
+            <section class="panel mini">
+              <h3>Resumo preventivo</h3>
+              <div id="imc-box" class="imc-box">Preencha os dados para calcular IMC.</div>
+              <p class="hint">Marque apenas os exames/prevenções que serão solicitados neste atendimento.</p>
+              <ul id="recommendations" class="list"></ul>
+            </section>
+
+            <section class="panel mini">
+              <h3>Atalhos rápidos</h3>
+              <div class="quick">
+                <button id="copy-btn" type="button">Copiar texto para prontuário</button>
+                <button id="print-btn" type="button">Imprimir</button>
+                <button id="pdf-btn" type="button">Exportar PDF</button>
+              </div>
+            </section>
+
+            <section class="panel mini refs">
+              <h3>Base técnica (resumo)</h3>
+              <ul>
+                <li>
+                  <a href="https://www.gov.br/saude/pt-br/assuntos/pcdt/r/rastreamento-cancer-do-colo-do-utero/view" target="_blank" rel="noreferrer">MS/CONITEC – Diretriz de rastreamento do colo do útero</a>
+                </li>
+                <li>
+                  <a href="https://www.inca.gov.br/publicacoes/notas-tecnicas/posicionamento-do-inca-sobre-faixa-etaria-para-rastreamento-do-cancer-de" target="_blank" rel="noreferrer">INCA – Rastreamento de câncer de mama</a>
+                </li>
+              </ul>
+            </section>
+          </aside>
+        </main>
+      </div>
+    </div>
+
+    <script src="./cid11-extra.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
