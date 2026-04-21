@@ -15,6 +15,17 @@ const dictCount = document.getElementById("dict-count");
 const newRecordBtn = document.getElementById("new-record-btn");
 const formAnchor = document.getElementById("form-anchor");
 const EXTRA_CID11 = Array.isArray(window.CID11_EXTRA) ? window.CID11_EXTRA : [];
+const helpBtn = document.getElementById("help-btn");
+const saveDraftBtn = document.getElementById("save-draft-btn");
+const generateDocumentBtn = document.getElementById("generate-document-btn");
+const documentDialog = document.getElementById("document-dialog");
+const dialogPrintBtn = document.getElementById("dialog-print-btn");
+const dialogPdfBtn = document.getElementById("dialog-pdf-btn");
+const dialogCancelBtn = document.getElementById("dialog-cancel-btn");
+const stepItems = [...document.querySelectorAll(".step[data-step]")];
+const step1Section = document.getElementById("step-1-section");
+const step2Section = document.getElementById("step-2-section");
+const step3Section = document.getElementById("final-report");
 
 const BASE_CATALOG = [
   { system: "CID-11", code: "5A11", name: "Diabetes mellitus tipo 2" },
@@ -54,6 +65,23 @@ const BASE_CATALOG = [
   { system: "CID-11", code: "QA80", name: "Refluxo gastroesofágico" },
   { system: "CID-11", code: "DA63", name: "Cefaleia tensional" },
   { system: "CID-11", code: "8A80", name: "Enxaqueca" },
+  { system: "CID-11", code: "8D20", name: "Paralisia cerebral espástica" },
+  { system: "CID-11", code: "8D20.0", name: "Paralisia cerebral espástica unilateral" },
+  { system: "CID-11", code: "8D20.1", name: "Paralisia cerebral espástica bilateral" },
+  { system: "CID-11", code: "8D20.10", name: "Paralisia cerebral espástica quadriplégica" },
+  { system: "CID-11", code: "8D20.11", name: "Paralisia cerebral espástica diplégica" },
+  { system: "CID-11", code: "8D20.1Z", name: "Paralisia cerebral espástica bilateral, não especificada" },
+  { system: "CID-11", code: "8D20.Y", name: "Outra paralisia cerebral espástica especificada" },
+  { system: "CID-11", code: "8D20.Z", name: "Paralisia cerebral espástica, não especificada" },
+  { system: "CID-11", code: "8D21", name: "Paralisia cerebral discinética" },
+  { system: "CID-11", code: "8D21.Y", name: "Outra paralisia cerebral discinética especificada" },
+  { system: "CID-11", code: "8D21.Z", name: "Paralisia cerebral discinética, não especificada" },
+  { system: "CID-11", code: "8D22", name: "Paralisia cerebral atáxica" },
+  { system: "CID-11", code: "8D22.Y", name: "Outra paralisia cerebral atáxica especificada" },
+  { system: "CID-11", code: "8D22.Z", name: "Paralisia cerebral atáxica, não especificada" },
+  { system: "CID-11", code: "8D23", name: "Síndrome de Worster-Drought" },
+  { system: "CID-11", code: "8D2Y", name: "Outras paralisias cerebrais especificadas" },
+  { system: "CID-11", code: "8D2Z", name: "Paralisia cerebral, não especificada" },
   { system: "CID-11", code: "2C81", name: "Neoplasia maligna de mama" },
   { system: "CID-11", code: "2E20", name: "Neoplasia maligna de colo do útero" },
   { system: "CID-11", code: "2C18", name: "Neoplasia maligna de cólon" },
@@ -110,6 +138,12 @@ const BASE_CATALOG = [
 
 const DEFAULT_CATALOG = [...BASE_CATALOG, ...EXTRA_CID11];
 
+function setActiveStep(stepNumber) {
+  stepItems.forEach((item) => {
+    item.classList.toggle("active", item.dataset.step === String(stepNumber));
+  });
+}
+
 let classificationCatalog = [];
 
 function normalize(value) {
@@ -145,7 +179,7 @@ function loadCatalog() {
   }
   try {
     const parsed = JSON.parse(saved);
-    classificationCatalog = dedupeCatalog(parsed);
+    classificationCatalog = dedupeCatalog([...DEFAULT_CATALOG, ...parsed]);
     if (!classificationCatalog.length) classificationCatalog = dedupeCatalog(DEFAULT_CATALOG);
   } catch {
     classificationCatalog = dedupeCatalog(DEFAULT_CATALOG);
@@ -261,6 +295,58 @@ function buildReport() {
 
 function updateReportPreview() {
   reportContent.textContent = buildReport();
+}
+
+function saveDraft() {
+  const payload = {
+    doctorName: document.getElementById("doctor-name").value,
+    doctorCrm: document.getElementById("doctor-crm").value,
+    patientName: document.getElementById("patient-name").value,
+    patientCpf: document.getElementById("patient-cpf").value,
+    sex: document.getElementById("sex").value,
+    age: document.getElementById("age").value,
+    weight: document.getElementById("weight").value,
+    height: document.getElementById("height").value,
+    classification: classificationInput.value,
+    notes: document.getElementById("notes").value,
+    comorbidity: [...document.querySelectorAll(".comorbidity-input:checked")].map((el) => el.value),
+    selectedRecommendations: [...document.querySelectorAll(".rec-check:checked")].map((el) => el.dataset.recommendation)
+  };
+  localStorage.setItem("prontuarioDraftV1", JSON.stringify(payload));
+}
+
+function loadDraft() {
+  const raw = localStorage.getItem("prontuarioDraftV1");
+  if (!raw) return;
+  try {
+    const d = JSON.parse(raw);
+    document.getElementById("doctor-name").value = d.doctorName || "";
+    document.getElementById("doctor-crm").value = d.doctorCrm || "";
+    document.getElementById("patient-name").value = d.patientName || "";
+    document.getElementById("patient-cpf").value = d.patientCpf || "";
+    document.getElementById("sex").value = d.sex || "";
+    document.getElementById("age").value = d.age || "";
+    document.getElementById("weight").value = d.weight || "";
+    document.getElementById("height").value = d.height || "";
+    classificationInput.value = d.classification || "";
+    document.getElementById("notes").value = d.notes || "";
+
+    const selected = new Set(d.comorbidity || []);
+    [...document.querySelectorAll(".comorbidity-input")].forEach((el) => {
+      el.checked = selected.has(el.value);
+    });
+
+    if (document.getElementById("sex").value && document.getElementById("age").value && document.getElementById("weight").value && document.getElementById("height").value) {
+      form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      const selectedRec = new Set(d.selectedRecommendations || []);
+      [...document.querySelectorAll(".rec-check")].forEach((el) => {
+        el.checked = selectedRec.has(el.dataset.recommendation);
+      });
+    }
+    updateReportPreview();
+  } catch {
+    // ignore malformed draft
+  }
 }
 
 function getSelectedComorbidities() {
@@ -478,7 +564,89 @@ if (newRecordBtn && formAnchor) {
   });
 }
 
+if (helpBtn) {
+  helpBtn.addEventListener("click", () => {
+    alert("Preencha os dados do paciente, clique em 'Gerar recomendações', selecione os exames no resumo, preencha CID/conduta e use 'Gerar documento' para imprimir ou salvar em PDF.");
+  });
+}
+
+if (saveDraftBtn) {
+  saveDraftBtn.addEventListener("click", () => {
+    saveDraft();
+    saveDraftBtn.textContent = "Rascunho salvo";
+    setTimeout(() => {
+      saveDraftBtn.textContent = "Salvar rascunho";
+    }, 1200);
+  });
+}
+
+if (generateDocumentBtn && documentDialog) {
+  generateDocumentBtn.addEventListener("click", () => {
+    setActiveStep(3);
+    updateReportPreview();
+    documentDialog.showModal();
+  });
+}
+
+if (dialogPrintBtn && documentDialog) {
+  dialogPrintBtn.addEventListener("click", () => {
+    documentDialog.close();
+    window.print();
+  });
+}
+
+if (dialogPdfBtn && documentDialog) {
+  dialogPdfBtn.addEventListener("click", () => {
+    documentDialog.close();
+    window.print();
+    setTimeout(() => {
+      alert("Na janela de impressão, selecione 'Salvar como PDF'.");
+    }, 200);
+  });
+}
+
+if (dialogCancelBtn && documentDialog) {
+  dialogCancelBtn.addEventListener("click", () => {
+    documentDialog.close();
+  });
+}
+
+if (step1Section && step2Section && step3Section) {
+  document.addEventListener("focusin", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (step1Section.contains(target)) {
+      setActiveStep(1);
+    } else if (step2Section.contains(target) || recList.contains(target)) {
+      setActiveStep(2);
+    } else if (step3Section.contains(target)) {
+      setActiveStep(3);
+    }
+  });
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visible) return;
+      if (visible.target === step1Section) setActiveStep(1);
+      if (visible.target === step2Section || visible.target === recList.closest(".panel")) setActiveStep(2);
+      if (visible.target === step3Section) setActiveStep(3);
+    },
+    { threshold: [0.35, 0.6] }
+  );
+
+  observer.observe(step1Section);
+  observer.observe(step2Section);
+  observer.observe(step3Section);
+  const summaryPanel = recList.closest(".panel");
+  if (summaryPanel) observer.observe(summaryPanel);
+}
+
 loadCatalog();
 mountClassificationOptions();
 updateCatalogCount();
+loadDraft();
 updateReportPreview();
+setActiveStep(1);

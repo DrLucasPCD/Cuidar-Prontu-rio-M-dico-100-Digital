@@ -32,21 +32,21 @@
       <div class="workspace">
         <header class="topbar">
           <div class="topbar-actions">
-            <button class="ghost" type="button">Ajuda</button>
-            <button class="ghost" type="button">Salvar rascunho</button>
-            <button class="solid" type="button">Gerar documento</button>
+            <button id="help-btn" class="ghost" type="button">Ajuda</button>
+            <button id="save-draft-btn" class="ghost" type="button">Salvar rascunho</button>
+            <button id="generate-document-btn" class="solid" type="button">Gerar documento</button>
           </div>
         </header>
 
         <section class="steps">
-          <div class="step active"><span>1</span> Dados do paciente</div>
-          <div class="step"><span>2</span> Avaliação e exames</div>
-          <div class="step"><span>3</span> Documento e exportação</div>
+          <div class="step active" data-step="1"><span>1</span> Dados do paciente</div>
+          <div class="step" data-step="2"><span>2</span> Avaliação e exames</div>
+          <div class="step" data-step="3"><span>3</span> Documento e exportação</div>
         </section>
 
         <main class="content-grid">
           <section class="main-column">
-            <section class="panel">
+            <section class="panel" id="step-1-section">
               <div class="panel-head">
                 <h2>Dados do paciente</h2>
               </div>
@@ -113,7 +113,7 @@
               </form>
             </section>
 
-            <section class="panel">
+            <section class="panel" id="step-2-section">
               <h2>Classificação e conduta</h2>
               <label class="full">
                 CID-11 ou outra classificação usada na APS
@@ -177,6 +177,16 @@
         </main>
       </div>
     </div>
+
+    <dialog id="document-dialog" class="doc-dialog">
+      <h3>Gerar documento</h3>
+      <p>Escolha como deseja gerar:</p>
+      <div class="doc-actions">
+        <button id="dialog-print-btn" type="button">Imprimir</button>
+        <button id="dialog-pdf-btn" type="button">Exportar PDF</button>
+      </div>
+      <button id="dialog-cancel-btn" type="button" class="ghost">Cancelar</button>
+    </dialog>
 
     <script src="./cid11-extra.js"></script>
     <script src="./app.js"></script>

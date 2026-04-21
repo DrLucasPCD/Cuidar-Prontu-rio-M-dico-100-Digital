@@ -394,6 +394,33 @@ button {
   color: #0a67aa;
 }
 
+.doc-dialog {
+  border: 1px solid #d3dee9;
+  border-radius: 14px;
+  padding: 16px;
+  width: min(360px, 92vw);
+}
+
+.doc-dialog::backdrop {
+  background: rgba(15, 31, 46, 0.38);
+}
+
+.doc-dialog h3 {
+  margin: 0 0 8px;
+}
+
+.doc-dialog p {
+  margin: 0 0 12px;
+  color: #5f7487;
+}
+
+.doc-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
 @media (max-width: 1220px) {
   .layout {
     grid-template-columns: 1fr;
