@@ -159,6 +159,8 @@ Médico: ${data.doctorName}
 CRM: ${data.doctorCrm}
 Paciente: ${data.patientName}
 CPF: ${data.patientCpf || data.patientCpfMasked || "não informado"}
+LGPD: ${data.lgpdConsent ? "consentimento registrado" : "consentimento não informado"}
+Protocolo: ${data.lgpdProtocolVersion || "LGPD-v1"}
 
 Prévia:
 ${data.preview}`;

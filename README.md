@@ -21,6 +21,16 @@ node server.js
 - O QR Code no documento aponta para a validação.
 - Se o backend não estiver disponível, o QR aponta para `verify.html` com fallback informativo (não vira busca do Google).
 
+## Protocolo LGPD (frontend + documento)
+
+- O sistema possui bloco específico de LGPD nas versões web e app web.
+- Para emitir/imprimir/exportar/copiar documento, é necessário marcar a ciência/consentimento LGPD do paciente.
+- O documento final inclui seção de conformidade com:
+  - finalidade assistencial na APS,
+  - consentimento registrado no atendimento,
+  - mecanismos de proteção (HTTPS + hash + QR de validação).
+- Há botão para limpar os dados locais do atendimento no dispositivo.
+
 Página de validação:
 - [http://localhost:3000/verify.html](http://localhost:3000/verify.html)
 

@@ -61,6 +61,8 @@ app.post("/documents", async (req, res) => {
       patientName: body?.meta?.patientName || "não informado",
       patientCpf: body?.meta?.patientCpf || "não informado",
       patientCpfMasked: maskCpf(body?.meta?.patientCpf || ""),
+      lgpdConsent: Boolean(body?.meta?.lgpdConsent),
+      lgpdProtocolVersion: body?.meta?.lgpdProtocolVersion || "LGPD-v1",
       source: body?.meta?.source || "web",
       createdAt: issuedAt
     };
@@ -115,6 +117,8 @@ app.get("/verify/:code", async (req, res) => {
       patientName: doc.patientName,
       patientCpf: doc.patientCpf || "não informado",
       patientCpfMasked: doc.patientCpfMasked,
+      lgpdConsent: Boolean(doc.lgpdConsent),
+      lgpdProtocolVersion: doc.lgpdProtocolVersion || "LGPD-v1",
       preview: String(doc.content || "").split("\n").slice(0, 14).join("\n")
     });
   } catch (err) {

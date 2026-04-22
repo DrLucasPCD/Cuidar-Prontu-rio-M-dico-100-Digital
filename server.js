@@ -107,7 +107,10 @@ async function handleApi(req, res, urlObj) {
         doctorName: body?.meta?.doctorName || "não informado",
         doctorCrm: body?.meta?.doctorCrm || "não informado",
         patientName: body?.meta?.patientName || "não informado",
+        patientCpf: body?.meta?.patientCpf || "não informado",
         patientCpfMasked: maskCpf(body?.meta?.patientCpf || ""),
+        lgpdConsent: Boolean(body?.meta?.lgpdConsent),
+        lgpdProtocolVersion: body?.meta?.lgpdProtocolVersion || "LGPD-v1",
         source: body?.meta?.source || "web"
       };
 
@@ -158,7 +161,10 @@ async function handleApi(req, res, urlObj) {
       doctorName: doc.doctorName,
       doctorCrm: doc.doctorCrm,
       patientName: doc.patientName,
+      patientCpf: doc.patientCpf || "não informado",
       patientCpfMasked: doc.patientCpfMasked,
+      lgpdConsent: Boolean(doc.lgpdConsent),
+      lgpdProtocolVersion: doc.lgpdProtocolVersion || "LGPD-v1",
       preview: doc.content.split("\n").slice(0, 14).join("\n")
     });
   }

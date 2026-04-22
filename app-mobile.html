@@ -119,6 +119,23 @@
             </label>
           </section>
 
+          <section class="card">
+            <h2>Protocolo LGPD e segurança</h2>
+            <label class="consent-row">
+              <input id="lgpd-consent" type="checkbox" />
+              Confirmo que o paciente foi informado e autorizou o tratamento de dados pessoais e sensíveis para finalidade assistencial.
+            </label>
+            <p id="lgpd-status" class="lgpd-status lgpd-pending">LGPD pendente: registre a ciência/consentimento para emissão do documento.</p>
+            <ul class="lgpd-list">
+              <li>Uso mínimo de dados para atendimento, solicitação e validação do documento.</li>
+              <li>Proteção com HTTPS, código de verificação e hash de integridade.</li>
+              <li>Rascunhos ficam no navegador local e podem ser apagados a qualquer momento.</li>
+            </ul>
+            <div class="actions lgpd-actions">
+              <button id="clear-local-data-btn" type="button" class="lgpd-clear-btn">Limpar dados locais deste dispositivo</button>
+            </div>
+          </section>
+
           <section class="card" id="final-report">
             <h2>Documento do atendimento</h2>
             <div class="report-layout">

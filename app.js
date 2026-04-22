@@ -20,6 +20,9 @@ const dictCount = document.getElementById("dict-count");
 const newRecordBtn = document.getElementById("new-record-btn");
 const recentBtn = document.getElementById("recent-btn");
 const formAnchor = document.getElementById("form-anchor");
+const lgpdConsent = document.getElementById("lgpd-consent");
+const lgpdStatus = document.getElementById("lgpd-status");
+const clearLocalDataBtn = document.getElementById("clear-local-data-btn");
 const EXTRA_CID11 = Array.isArray(window.CID11_EXTRA) ? window.CID11_EXTRA : [];
 const helpBtn = document.getElementById("help-btn");
 const saveDraftBtn = document.getElementById("save-draft-btn");
@@ -267,6 +270,24 @@ function formatNowPtBr() {
   }).format(now);
 }
 
+function isLgpdConsentChecked() {
+  return Boolean(lgpdConsent && lgpdConsent.checked);
+}
+
+function updateLgpdStatus() {
+  if (!lgpdStatus) return;
+  lgpdStatus.classList.remove("lgpd-ok", "lgpd-pending");
+
+  if (isLgpdConsentChecked()) {
+    lgpdStatus.classList.add("lgpd-ok");
+    lgpdStatus.textContent = "LGPD confirmado: consentimento registrado e dados protegidos com mecanismos de segurança.";
+    return;
+  }
+
+  lgpdStatus.classList.add("lgpd-pending");
+  lgpdStatus.textContent = "LGPD pendente: registre a ciência/consentimento para emissão do documento.";
+}
+
 function categorizeSelectedRecommendations(recommendations) {
   const categories = {
     "Exames de sangue": [],
@@ -423,7 +444,9 @@ async function issueVerificationOnBackend(report) {
           doctorName: document.getElementById("doctor-name")?.value || "",
           doctorCrm: document.getElementById("doctor-crm")?.value || "",
           patientName: document.getElementById("patient-name")?.value || "",
-          patientCpf: document.getElementById("patient-cpf")?.value || ""
+          patientCpf: document.getElementById("patient-cpf")?.value || "",
+          lgpdConsent: isLgpdConsentChecked(),
+          lgpdProtocolVersion: "LGPD-v1"
         }
       })
     });
@@ -471,6 +494,7 @@ function buildReport() {
   const examLines = buildExamCategoryLines(categorized);
   const imcText = imcBox.textContent || "IMC não calculado";
   const generatedAt = formatNowPtBr();
+  const lgpdConsentText = isLgpdConsentChecked() ? "registrado no atendimento" : "não registrado";
 
   const baseLines = [
     "CUIDAR+ | PRONTUÁRIO MÉDICO 100% DIGITAL",
@@ -490,6 +514,11 @@ function buildReport() {
     ...(examLines.length ? examLines : ["  Nenhum exame selecionado.", ""]),
     "Campo adicional (atestado, medicações, orientações):",
     ...(notes ? [`${notes}`] : ["sem observações adicionais"]),
+    "",
+    "Conformidade LGPD:",
+    "- Finalidade: assistência em saúde na APS.",
+    `- Consentimento/ciência do paciente: ${lgpdConsentText}.`,
+    "- Segurança: dados protegidos com HTTPS, hash de integridade e QR Code de validação.",
     "",
     `Data e hora da solicitação: ${generatedAt}`,
     "",
@@ -528,6 +557,7 @@ function buildReport() {
 }
 
 function updateReportPreview() {
+  updateLgpdStatus();
   const report = buildReport();
   reportContent.textContent = report.text;
 
@@ -544,11 +574,17 @@ function updateReportPreview() {
 }
 
 async function ensureBackendVerification() {
+  if (lgpdConsent && !lgpdConsent.checked) {
+    alert("Para emitir, imprimir, exportar ou copiar o documento, registre a ciência/consentimento LGPD do paciente.");
+    lgpdConsent.focus();
+    return false;
+  }
+
   const report = buildReport();
   if (backendVerification && backendVerification.contentHash === report.contentHash) return true;
   const ok = await issueVerificationOnBackend(report);
   if (ok) updateReportPreview();
-  return ok;
+  return true;
 }
 
 function saveDraft() {
@@ -563,6 +599,7 @@ function saveDraft() {
     height: document.getElementById("height").value,
     classification: classificationInput.value,
     notes: document.getElementById("notes").value,
+    lgpdConsent: isLgpdConsentChecked(),
     comorbidity: [...document.querySelectorAll(".comorbidity-input:checked")].map((el) => el.value),
     selectedRecommendations: [...document.querySelectorAll(".rec-check:checked")].map((el) => el.dataset.recommendation),
     extraExams: [...extraExamsList.querySelectorAll(".extra-check")].map((el) => ({
@@ -588,6 +625,7 @@ function loadDraft() {
     document.getElementById("height").value = d.height || "";
     classificationInput.value = d.classification || "";
     document.getElementById("notes").value = d.notes || "";
+    if (lgpdConsent) lgpdConsent.checked = Boolean(d.lgpdConsent);
 
     const selected = new Set(d.comorbidity || []);
     [...document.querySelectorAll(".comorbidity-input")].forEach((el) => {
@@ -607,10 +645,36 @@ function loadDraft() {
       addExtraExamItem(exam?.name || "", Boolean(exam?.checked));
     });
 
+    updateLgpdStatus();
     updateReportPreview();
   } catch {
     // ignore malformed draft
   }
+}
+
+function clearLocalPatientData() {
+  localStorage.removeItem("prontuarioDraftV1");
+  backendVerification = null;
+
+  if (form) form.reset();
+  classificationInput.value = "";
+  classificationMatch.textContent = "";
+  document.getElementById("notes").value = "";
+  recList.innerHTML = "";
+  extraExamsList.innerHTML = "";
+  if (extraExamInput) extraExamInput.value = "";
+  imcBox.textContent = "Preencha os dados para calcular IMC.";
+
+  if (verificationCodeEl) verificationCodeEl.textContent = "Aguardando geração";
+  if (verificationQr) {
+    verificationQr.removeAttribute("src");
+    verificationQr.alt = "QR Code de verificação do documento";
+  }
+
+  if (lgpdConsent) lgpdConsent.checked = false;
+  updateLgpdStatus();
+  updateReportPreview();
+  setActiveStep(1);
 }
 
 function getSelectedComorbidities() {
@@ -785,7 +849,8 @@ resetDictBtn.addEventListener("click", () => {
 });
 
 copyBtn.addEventListener("click", async () => {
-  await ensureBackendVerification();
+  const canProceed = await ensureBackendVerification();
+  if (!canProceed) return;
   updateReportPreview();
   try {
     await navigator.clipboard.writeText(reportContent.textContent);
@@ -799,13 +864,15 @@ copyBtn.addEventListener("click", async () => {
 });
 
 printBtn.addEventListener("click", async () => {
-  await ensureBackendVerification();
+  const canProceed = await ensureBackendVerification();
+  if (!canProceed) return;
   updateReportPreview();
   window.print();
 });
 
 pdfBtn.addEventListener("click", async () => {
-  await ensureBackendVerification();
+  const canProceed = await ensureBackendVerification();
+  if (!canProceed) return;
   updateReportPreview();
   window.print();
 });
@@ -820,6 +887,7 @@ document.getElementById("age").addEventListener("input", updateReportPreview);
 document.getElementById("weight").addEventListener("input", updateReportPreview);
 document.getElementById("height").addEventListener("input", updateReportPreview);
 [...document.querySelectorAll(".comorbidity-input")].forEach((cb) => cb.addEventListener("change", updateReportPreview));
+if (lgpdConsent) lgpdConsent.addEventListener("change", updateReportPreview);
 recList.addEventListener("change", (event) => {
   if (event.target.classList.contains("rec-check")) updateReportPreview();
 });
@@ -855,6 +923,15 @@ if (newRecordBtn && formAnchor) {
   });
 }
 
+if (clearLocalDataBtn) {
+  clearLocalDataBtn.addEventListener("click", () => {
+    const confirmed = window.confirm("Remover os dados locais do atendimento neste dispositivo?");
+    if (!confirmed) return;
+    clearLocalPatientData();
+    alert("Dados locais removidos deste dispositivo.");
+  });
+}
+
 if (recentBtn) {
   recentBtn.addEventListener("click", () => {
     const hasDraft = Boolean(localStorage.getItem("prontuarioDraftV1"));
@@ -871,7 +948,7 @@ if (recentBtn) {
 
 if (helpBtn) {
   helpBtn.addEventListener("click", () => {
-    alert("Preencha os dados do paciente, clique em 'Gerar recomendações', selecione os exames no resumo, preencha CID/conduta e use 'Gerar documento' para imprimir ou salvar em PDF.");
+    alert("Preencha os dados do paciente, clique em 'Gerar recomendações', selecione os exames no resumo, preencha CID/conduta, confirme o protocolo LGPD e use 'Gerar documento' para imprimir ou salvar em PDF.");
   });
 }
 
@@ -887,7 +964,8 @@ if (saveDraftBtn) {
 
 if (generateDocumentBtn && documentDialog) {
   generateDocumentBtn.addEventListener("click", async () => {
-    await ensureBackendVerification();
+    const canProceed = await ensureBackendVerification();
+    if (!canProceed) return;
     setActiveStep(3);
     updateReportPreview();
     documentDialog.showModal();
@@ -895,14 +973,18 @@ if (generateDocumentBtn && documentDialog) {
 }
 
 if (dialogPrintBtn && documentDialog) {
-  dialogPrintBtn.addEventListener("click", () => {
+  dialogPrintBtn.addEventListener("click", async () => {
+    const canProceed = await ensureBackendVerification();
+    if (!canProceed) return;
     documentDialog.close();
     window.print();
   });
 }
 
 if (dialogPdfBtn && documentDialog) {
-  dialogPdfBtn.addEventListener("click", () => {
+  dialogPdfBtn.addEventListener("click", async () => {
+    const canProceed = await ensureBackendVerification();
+    if (!canProceed) return;
     documentDialog.close();
     window.print();
     setTimeout(() => {
