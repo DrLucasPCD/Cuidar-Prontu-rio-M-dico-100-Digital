@@ -127,6 +127,7 @@
       async function loadAudit(code) {
         try {
           const res = await fetch(`/api/audit/${encodeURIComponent(code)}`);
+          if (!res.ok) throw new Error("audit_unavailable");
           const data = await res.json();
           const audits = Array.isArray(data.audits) ? data.audits : [];
           auditList.innerHTML = "";
@@ -140,7 +141,7 @@
             auditList.appendChild(li);
           });
         } catch {
-          auditList.innerHTML = "<li class='bad'>Falha ao carregar auditoria.</li>";
+          auditList.innerHTML = "<li class='muted'>Auditoria indisponível neste ambiente (modo offline).</li>";
         }
       }
 
@@ -167,13 +168,15 @@ Hash: ${fallback.hash || "não informado"}
 
 Observação:
 - Para validação completa de autenticidade, este código precisa estar registrado no backend.`;
+              auditList.innerHTML = "<li class='muted'>Auditoria indisponível em modo offline.</li>";
+              return;
             } else {
               statusEl.className = "bad";
               statusEl.textContent = "Documento não localizado. Código inválido ou inexistente.";
               detailsEl.textContent = JSON.stringify(data, null, 2);
+              await loadAudit(code);
+              return;
             }
-            await loadAudit(code);
-            return;
           }
 
           statusEl.className = "ok";
@@ -203,12 +206,13 @@ Hash: ${fallback.hash || "não informado"}
 Observação:
 - Este resultado é informativo.
 - Para autenticidade jurídica, valide quando houver acesso ao backend.`;
+            auditList.innerHTML = "<li class='muted'>Auditoria indisponível em modo offline.</li>";
           } else {
             statusEl.className = "bad";
             statusEl.textContent = "Falha de comunicação com o servidor de validação.";
             detailsEl.textContent = String(err);
+            auditList.innerHTML = "<li class='bad'>Falha ao carregar auditoria.</li>";
           }
-          auditList.innerHTML = "<li class='bad'>Falha ao carregar auditoria.</li>";
         }
       }
 
