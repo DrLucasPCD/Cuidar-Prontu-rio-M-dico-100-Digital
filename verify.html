@@ -91,13 +91,6 @@
         <h2>Detalhes</h2>
         <pre id="details">Sem dados.</pre>
       </section>
-
-      <section class="card">
-        <h2>Trilha de auditoria</h2>
-        <ul id="audit-list">
-          <li class="muted">Sem eventos.</li>
-        </ul>
-      </section>
     </main>
 
     <script src="./config.js"></script>
@@ -107,7 +100,6 @@
       const checkBtn = document.getElementById("check-btn");
       const statusEl = document.getElementById("status");
       const detailsEl = document.getElementById("details");
-      const auditList = document.getElementById("audit-list");
       const params = new URLSearchParams(window.location.search);
       const fallbackRaw = params.get("fallback") || "";
 
@@ -126,34 +118,12 @@
 
       const fallback = parseFallback(fallbackRaw);
 
-      async function loadAudit(code) {
-        try {
-          const res = await fetch(`${API_BASE}/audit/${encodeURIComponent(code)}`);
-          if (!res.ok) throw new Error("audit_unavailable");
-          const data = await res.json();
-          const audits = Array.isArray(data.audits) ? data.audits : [];
-          auditList.innerHTML = "";
-          if (!audits.length) {
-            auditList.innerHTML = "<li class='muted'>Sem eventos.</li>";
-            return;
-          }
-          audits.slice(0, 10).forEach((a) => {
-            const li = document.createElement("li");
-            li.textContent = `${new Date(a.ts).toLocaleString("pt-BR")} — ${a.action}`;
-            auditList.appendChild(li);
-          });
-        } catch {
-          auditList.innerHTML = "<li class='muted'>Auditoria indisponível neste ambiente (modo offline).</li>";
-        }
-      }
-
       async function checkCode() {
         const code = codeInput.value.trim();
         if (!code) return;
         statusEl.className = "muted";
         statusEl.textContent = "Validando...";
         detailsEl.textContent = "Carregando...";
-        auditList.innerHTML = "<li class='muted'>Carregando...</li>";
 
         try {
           const res = await fetch(`${API_BASE}/verify/${encodeURIComponent(code)}`);
@@ -170,19 +140,17 @@ Hash: ${fallback.hash || "não informado"}
 
 Observação:
 - Para validação completa de autenticidade, este código precisa estar registrado no backend.`;
-              auditList.innerHTML = "<li class='muted'>Auditoria indisponível em modo offline.</li>";
               return;
             } else {
               statusEl.className = "bad";
               statusEl.textContent = "Documento não localizado. Código inválido ou inexistente.";
               detailsEl.textContent = JSON.stringify(data, null, 2);
-              await loadAudit(code);
               return;
             }
           }
 
           statusEl.className = "ok";
-          statusEl.textContent = "Documento autêntico e registrado no backend.";
+          statusEl.textContent = "Válido.";
           detailsEl.textContent =
 `Código: ${data.code}
 Emitido em: ${new Date(data.issuedAt).toLocaleString("pt-BR")}
@@ -190,11 +158,10 @@ Hash: ${data.contentHash}
 Médico: ${data.doctorName}
 CRM: ${data.doctorCrm}
 Paciente: ${data.patientName}
-CPF (mascarado): ${data.patientCpfMasked}
+CPF: ${data.patientCpf || data.patientCpfMasked || "não informado"}
 
 Prévia:
 ${data.preview}`;
-          await loadAudit(code);
         } catch (err) {
           if (fallback.codigo === code) {
             statusEl.className = "muted";
@@ -208,12 +175,10 @@ Hash: ${fallback.hash || "não informado"}
 Observação:
 - Este resultado é informativo.
 - Para autenticidade jurídica, valide quando houver acesso ao backend.`;
-            auditList.innerHTML = "<li class='muted'>Auditoria indisponível em modo offline.</li>";
           } else {
             statusEl.className = "bad";
             statusEl.textContent = "Falha de comunicação com o servidor de validação.";
             detailsEl.textContent = String(err);
-            auditList.innerHTML = "<li class='bad'>Falha ao carregar auditoria.</li>";
           }
         }
       }

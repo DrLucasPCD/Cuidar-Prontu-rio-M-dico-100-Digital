@@ -59,6 +59,7 @@ app.post("/documents", async (req, res) => {
       doctorName: body?.meta?.doctorName || "não informado",
       doctorCrm: body?.meta?.doctorCrm || "não informado",
       patientName: body?.meta?.patientName || "não informado",
+      patientCpf: body?.meta?.patientCpf || "não informado",
       patientCpfMasked: maskCpf(body?.meta?.patientCpf || ""),
       source: body?.meta?.source || "web",
       createdAt: issuedAt
@@ -112,6 +113,7 @@ app.get("/verify/:code", async (req, res) => {
       doctorName: doc.doctorName,
       doctorCrm: doc.doctorCrm,
       patientName: doc.patientName,
+      patientCpf: doc.patientCpf || "não informado",
       patientCpfMasked: doc.patientCpfMasked,
       preview: String(doc.content || "").split("\n").slice(0, 14).join("\n")
     });
