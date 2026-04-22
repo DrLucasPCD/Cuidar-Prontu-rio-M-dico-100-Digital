@@ -29,6 +29,7 @@ const stepItems = [...document.querySelectorAll(".step[data-step]")];
 const step1Section = document.getElementById("step-1-section");
 const step2Section = document.getElementById("step-2-section");
 const step3Section = document.getElementById("final-report");
+const API_BASE = (window.CUIDAR_API_BASE || "/api").replace(/\/$/, "");
 let backendVerification = null;
 let backendWarned = false;
 
@@ -368,7 +369,7 @@ function buildFallbackVerifyUrl(code, payload) {
 async function issueVerificationOnBackend(report) {
   if (!window.fetch) return false;
   try {
-    const response = await fetch("/api/documents", {
+    const response = await fetch(`${API_BASE}/documents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -384,17 +385,19 @@ async function issueVerificationOnBackend(report) {
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
+    const frontendVerifyUrl = new URL("/verify.html", window.location.origin);
+    frontendVerifyUrl.searchParams.set("code", data.code);
     backendVerification = {
       contentHash: report.contentHash,
       code: data.code,
-      verifyUrl: data.verifyUrl,
-      qrPayload: data.qrPayload || data.verifyUrl
+      verifyUrl: frontendVerifyUrl.toString(),
+      qrPayload: frontendVerifyUrl.toString()
     };
     return true;
   } catch {
     if (!backendWarned) {
       backendWarned = true;
-      console.warn("Backend de validação indisponível. Inicie com: node server.js");
+      console.warn(`Backend de validação indisponível em ${API_BASE}.`);
     }
     return false;
   }

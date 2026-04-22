@@ -54,7 +54,23 @@ firebase deploy
 Isso publica:
 - frontend (Hosting)
 - API `/api/**` via Cloud Functions (`functions/index.js`)
-- regras do Firestore (`firestore.rules`)
+- regras do Realtime Database (`database.rules.json`)
+
+### Sem Firebase Hosting (ex.: Netlify)
+
+Pode usar normalmente. Nesse caso:
+
+1. Publique **apenas functions + database rules**:
+```bash
+firebase deploy --only functions,database
+```
+
+2. O frontend usa a API externa configurada em `/config.js`:
+```js
+window.CUIDAR_API_BASE = "https://southamerica-east1-cuidarmais-7d01d.cloudfunctions.net/api";
+```
+
+3. Publique os arquivos estáticos normalmente no Netlify.
 
 ### 3) Endpoints de validação (Firebase)
 

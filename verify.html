@@ -100,7 +100,9 @@
       </section>
     </main>
 
+    <script src="./config.js"></script>
     <script>
+      const API_BASE = (window.CUIDAR_API_BASE || "/api").replace(/\/$/, "");
       const codeInput = document.getElementById("code-input");
       const checkBtn = document.getElementById("check-btn");
       const statusEl = document.getElementById("status");
@@ -126,7 +128,7 @@
 
       async function loadAudit(code) {
         try {
-          const res = await fetch(`/api/audit/${encodeURIComponent(code)}`);
+          const res = await fetch(`${API_BASE}/audit/${encodeURIComponent(code)}`);
           if (!res.ok) throw new Error("audit_unavailable");
           const data = await res.json();
           const audits = Array.isArray(data.audits) ? data.audits : [];
@@ -154,7 +156,7 @@
         auditList.innerHTML = "<li class='muted'>Carregando...</li>";
 
         try {
-          const res = await fetch(`/api/verify/${encodeURIComponent(code)}`);
+          const res = await fetch(`${API_BASE}/verify/${encodeURIComponent(code)}`);
           const data = await res.json();
           if (!res.ok || !data.valid) {
             if (fallback.codigo === code) {
