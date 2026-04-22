@@ -1,5 +1,4 @@
 :root {
-  --phone: #f4f7f8;
   --line: #dce3e8;
   --text: #16344a;
   --muted: #60768a;
@@ -8,22 +7,12 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  background: radial-gradient(circle at 20% 0%, #0b4550, #042b31 55%, #03262c);
+  background: #f3f7f8;
   color: var(--text);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
-.app-bg { min-height: 100vh; display: grid; place-items: center; padding: 12px; }
-.phone-shell {
-  width: min(430px, 100vw - 16px);
-  height: min(900px, 100vh - 16px);
-  border-radius: 46px;
-  border: 8px solid #0d5560;
-  background: var(--phone);
-  display: flex; flex-direction: column; overflow: hidden;
-}
-.status-row { padding: 16px 24px 10px; display: flex; justify-content: space-between; font-size: 1.7rem; font-weight: 700; }
-.status-row span { font-size: 1rem; }
-.phone-content { flex: 1; overflow: auto; padding: 8px 16px 24px; display: grid; gap: 12px; }
+.app-page { min-height: 100vh; padding: 16px; }
+.app-content { width: min(1100px, 100%); margin: 0 auto; display: grid; gap: 12px; }
 .hero { display: flex; justify-content: space-between; align-items: center; }
 .brand { display: flex; gap: 12px; align-items: center; }
 .brand-mark { width: 84px; height: 84px; border-radius: 18px; overflow: hidden; }
@@ -42,7 +31,7 @@ body {
 .quick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .tile-btn { border: 1px solid #e2e8ee; background: #f7f9fb; border-radius: 14px; min-height: 96px; display: grid; place-content: center; gap: 6px; text-align: center; }
 .tile-btn span { font-size: 1.6rem; }
-.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 label { display: grid; gap: 6px; font-size: 0.9rem; }
 input:not([type="checkbox"]), select, textarea { width: 100%; border: 1px solid #cfd9e2; border-radius: 10px; padding: 10px; font: inherit; }
 fieldset { border: 1px solid #d8e1ea; border-radius: 12px; margin: 10px 0 0; }
@@ -58,3 +47,4 @@ button { font: inherit; border-radius: 10px; border: 1px solid #0d7f84; backgrou
 .dictionary-tools { display: grid; gap: 8px; margin-top: 10px; }
 .report-pre { margin: 0; border: 1px solid #d9e1e8; border-radius: 12px; background: #fafcfd; padding: 12px; white-space: pre-wrap; line-height: 1.45; font-family: "Consolas","Courier New",monospace; font-size: 0.88rem; }
 @media (max-width: 420px) { .quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .checks { grid-template-columns: 1fr; } }
+@media (max-width: 920px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
