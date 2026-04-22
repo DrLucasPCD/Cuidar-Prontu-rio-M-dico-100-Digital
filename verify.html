@@ -106,6 +106,23 @@
       const statusEl = document.getElementById("status");
       const detailsEl = document.getElementById("details");
       const auditList = document.getElementById("audit-list");
+      const params = new URLSearchParams(window.location.search);
+      const fallbackRaw = params.get("fallback") || "";
+
+      function parseFallback(raw) {
+        const out = {};
+        if (!raw) return out;
+        raw.split("|").forEach((part) => {
+          const idx = part.indexOf("=");
+          if (idx <= 0) return;
+          const key = part.slice(0, idx);
+          const value = part.slice(idx + 1);
+          out[key] = value;
+        });
+        return out;
+      }
+
+      const fallback = parseFallback(fallbackRaw);
 
       async function loadAudit(code) {
         try {
@@ -139,9 +156,22 @@
           const res = await fetch(`/api/verify/${encodeURIComponent(code)}`);
           const data = await res.json();
           if (!res.ok || !data.valid) {
-            statusEl.className = "bad";
-            statusEl.textContent = "Documento não localizado. Código inválido ou inexistente.";
-            detailsEl.textContent = JSON.stringify(data, null, 2);
+            if (fallback.codigo === code) {
+              statusEl.className = "muted";
+              statusEl.textContent = "Validação offline: código presente no QR, mas backend indisponível ou sem registro.";
+              detailsEl.textContent =
+`Código: ${fallback.codigo || "não informado"}
+Tipo: ${fallback.tipo || "não informado"}
+Emitido: ${fallback.emitido || "não informado"}
+Hash: ${fallback.hash || "não informado"}
+
+Observação:
+- Para validação completa de autenticidade, este código precisa estar registrado no backend.`;
+            } else {
+              statusEl.className = "bad";
+              statusEl.textContent = "Documento não localizado. Código inválido ou inexistente.";
+              detailsEl.textContent = JSON.stringify(data, null, 2);
+            }
             await loadAudit(code);
             return;
           }
@@ -161,9 +191,23 @@ Prévia:
 ${data.preview}`;
           await loadAudit(code);
         } catch (err) {
-          statusEl.className = "bad";
-          statusEl.textContent = "Falha de comunicação com o servidor de validação.";
-          detailsEl.textContent = String(err);
+          if (fallback.codigo === code) {
+            statusEl.className = "muted";
+            statusEl.textContent = "Validação offline: sem conexão com backend.";
+            detailsEl.textContent =
+`Código: ${fallback.codigo || "não informado"}
+Tipo: ${fallback.tipo || "não informado"}
+Emitido: ${fallback.emitido || "não informado"}
+Hash: ${fallback.hash || "não informado"}
+
+Observação:
+- Este resultado é informativo.
+- Para autenticidade jurídica, valide quando houver acesso ao backend.`;
+          } else {
+            statusEl.className = "bad";
+            statusEl.textContent = "Falha de comunicação com o servidor de validação.";
+            detailsEl.textContent = String(err);
+          }
           auditList.innerHTML = "<li class='bad'>Falha ao carregar auditoria.</li>";
         }
       }
@@ -173,7 +217,6 @@ ${data.preview}`;
         if (e.key === "Enter") checkCode();
       });
 
-      const params = new URLSearchParams(window.location.search);
       const code = params.get("code");
       if (code) {
         codeInput.value = code;

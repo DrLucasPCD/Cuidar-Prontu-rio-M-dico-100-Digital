@@ -350,6 +350,21 @@ function buildVerificationCode(baseText) {
   return `CUIDAR-${stamp}-${digest}`;
 }
 
+function buildFallbackVerifyUrl(code, payload) {
+  const canUseCurrentOrigin = window.location.protocol === "http:" || window.location.protocol === "https:";
+  if (canUseCurrentOrigin) {
+    const url = new URL("/verify.html", window.location.origin);
+    url.searchParams.set("code", code);
+    url.searchParams.set("fallback", payload);
+    return url.toString();
+  }
+
+  const url = new URL("https://cuidar.local/verify");
+  url.searchParams.set("code", code);
+  url.searchParams.set("fallback", payload);
+  return url.toString();
+}
+
 async function issueVerificationOnBackend(report) {
   if (!window.fetch) return false;
   try {
@@ -449,16 +464,16 @@ function buildReport() {
   ].join("|");
   const verifyUrl = (backendVerification && backendVerification.contentHash === contentHash)
     ? backendVerification.verifyUrl
-    : "";
+    : buildFallbackVerifyUrl(verificationCode, verificationPayload);
   const qrPayload = (backendVerification && backendVerification.contentHash === contentHash)
-    ? (backendVerification.qrPayload || backendVerification.verifyUrl || verificationPayload)
-    : verificationPayload;
+    ? (backendVerification.qrPayload || backendVerification.verifyUrl || verifyUrl)
+    : verifyUrl;
 
   const text = [
     ...baseLines,
     "",
     `Código de verificação digital: ${verificationCode}`,
-    ...(verifyUrl ? [`URL de validação: ${verifyUrl}`] : []),
+    `URL de validação: ${verifyUrl}`,
     "Valide a integridade deste documento pelo QR Code."
   ].join("\n");
 

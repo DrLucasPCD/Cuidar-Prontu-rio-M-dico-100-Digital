@@ -19,6 +19,7 @@ node server.js
   - hash de integridade do documento
   - URL de validação
 - O QR Code no documento aponta para a validação.
+- Se o backend não estiver disponível, o QR aponta para `verify.html` com fallback informativo (não vira busca do Google).
 
 Página de validação:
 - [http://localhost:3000/verify.html](http://localhost:3000/verify.html)
