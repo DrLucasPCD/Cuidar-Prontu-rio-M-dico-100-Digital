@@ -248,6 +248,89 @@ function parseCsvDictionary(text) {
   return items;
 }
 
+function formatNowPtBr() {
+  const now = new Date();
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(now);
+}
+
+function categorizeSelectedRecommendations(recommendations) {
+  const categories = {
+    "Exames de sangue": [],
+    "Exames de urina": [],
+    "Exames de imagem": [],
+    "Avaliações clínicas": [],
+    "Outros procedimentos": []
+  };
+
+  for (const text of recommendations) {
+    const t = text.toLowerCase();
+
+    if (t.includes("aferição de pressão arterial")) {
+      categories["Avaliações clínicas"].push("Aferição de pressão arterial");
+      continue;
+    }
+
+    if (t.includes("rastreamento para dm2") || t.includes("glicemia")) {
+      categories["Exames de sangue"].push("Glicemia de jejum");
+      categories["Exames de sangue"].push("Hemoglobina glicada (HbA1c)");
+      continue;
+    }
+
+    if (t.includes("perfil lipídico")) {
+      categories["Exames de sangue"].push("Perfil lipídico (colesterol total, HDL, LDL, triglicerídeos)");
+      continue;
+    }
+
+    if (t.includes("função renal") || t.includes("albuminúria")) {
+      categories["Exames de sangue"].push("Creatinina sérica (com eTFG)");
+      categories["Exames de urina"].push("Relação albumina/creatinina urinária (ou albuminúria)");
+      continue;
+    }
+
+    if (t.includes("câncer de mama") || t.includes("mamografia")) {
+      categories["Exames de imagem"].push("Mamografia bilateral");
+      continue;
+    }
+
+    if (t.includes("colo do útero") || t.includes("hpv")) {
+      categories["Outros procedimentos"].push("Rastreamento de colo uterino (citopatológico e/ou teste de HPV conforme protocolo)");
+      continue;
+    }
+
+    if (t.includes("situação vacinal") || t.includes("vacinal")) {
+      categories["Outros procedimentos"].push("Avaliação e atualização de situação vacinal");
+      continue;
+    }
+
+    categories["Outros procedimentos"].push(text);
+  }
+
+  for (const key of Object.keys(categories)) {
+    categories[key] = [...new Set(categories[key])];
+  }
+
+  return categories;
+}
+
+function buildExamCategoryLines(categories) {
+  const lines = [];
+  for (const [category, exams] of Object.entries(categories)) {
+    if (!exams.length) continue;
+    lines.push(`${category}:`);
+    exams.forEach((exam, index) => {
+      lines.push(`  ${index + 1}. ${exam}`);
+    });
+    lines.push("");
+  }
+  return lines;
+}
+
 function buildReport() {
   const doctorName = document.getElementById("doctor-name").value.trim() || "não informado";
   const doctorCrm = document.getElementById("doctor-crm").value.trim() || "não informado";
@@ -267,30 +350,37 @@ function buildReport() {
   let clsText = currentCls || "não informado";
   if (found.exact) clsText = formatClassificationMatch(found.exact);
 
-  const items = [...recList.querySelectorAll('.rec-check:checked')]
-    .map((input) => `- ${input.dataset.recommendation}`);
+  const selectedRecommendations = [...recList.querySelectorAll(".rec-check:checked")]
+    .map((input) => input.dataset.recommendation);
+  const categorized = categorizeSelectedRecommendations(selectedRecommendations);
+  const examLines = buildExamCategoryLines(categorized);
   const imcText = imcBox.textContent || "IMC não calculado";
+  const generatedAt = formatNowPtBr();
 
   return [
     "CUIDAR+ | PRONTUÁRIO MÉDICO 100% DIGITAL",
+    "SOLICITAÇÃO DE EXAME",
     "",
-    `Médico: ${doctorName}`,
-    `CRM: ${doctorCrm}`,
     `Paciente: ${patientName}`,
     `CPF: ${patientCpf}`,
-    "",
-    `Sexo: ${sex}`,
-    `Idade: ${age}`,
-    `Peso: ${weight} kg`,
-    `Altura: ${height} m`,
+    `Sexo: ${sex}   Idade: ${age}`,
+    `Peso: ${weight} kg   Altura: ${height} m`,
     `${imcText}`,
+    "",
     `Comorbidades/fatores: ${riskList}`,
     "",
-    "Exames/prevenção selecionados:",
-    ...(items.length ? items : ["- Nenhum exame/prevenção selecionado."]),
-    "",
     `Classificação diagnóstica (CID-11/APS): ${clsText}`,
-    `Conduta adicional: ${notes}`
+    "",
+    "Exames solicitados:",
+    ...(examLines.length ? examLines : ["  Nenhum exame selecionado.", ""]),
+    `Observações clínicas/conduta: ${notes}`,
+    "",
+    `Data e hora da solicitação: ${generatedAt}`,
+    "",
+    `Médico solicitante: ${doctorName}`,
+    `CRM: ${doctorCrm}`,
+    "",
+    "Assinatura: ___________________________________________"
   ].join("\n");
 }
 
