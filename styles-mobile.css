@@ -44,15 +44,9 @@ legend { padding: 0 8px; color: #50687d; }
 .checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .checks label { border: 1px solid #e2e8ee; background: #fafcfd; border-radius: 10px; padding: 9px; display: flex; gap: 8px; align-items: flex-start; }
 .actions { margin-top: 10px; }
-.consent-row { display: flex; align-items: flex-start; gap: 8px; font-weight: 600; color: #174b50; }
-.consent-row input[type="checkbox"] { margin-top: 3px; }
-.lgpd-status { margin: 10px 0 8px; border-radius: 10px; padding: 9px 10px; font-weight: 600; }
-.lgpd-pending { background: #fff8e6; border: 1px solid #f2d38d; color: #7c5a12; }
-.lgpd-ok { background: #e9f7ef; border: 1px solid #b6dfc5; color: #1b6b45; }
+.lgpd-static { margin: 0 0 10px; border-radius: 10px; padding: 9px 10px; font-weight: 600; background: #eef8fb; border: 1px solid #b6dbe8; color: #195466; }
 .lgpd-list { margin: 0; padding-left: 18px; color: #4c6378; }
 .lgpd-list li { margin: 6px 0; }
-.lgpd-actions { margin-top: 12px; }
-.lgpd-clear-btn { background: #fff; color: #0f6770; border: 1px solid #abd3d8; font-weight: 600; }
 button { font: inherit; border-radius: 10px; border: 1px solid #0d7f84; background: linear-gradient(90deg, #0e767a, #149197); color: #fff; padding: 10px 12px; font-weight: 600; cursor: pointer; }
 .imc-box { border: 1px solid #d5dfe7; border-radius: 12px; padding: 10px; background: #f8fbfc; color: #0a5761; font-weight: 600; }
 .hint, .muted { color: var(--muted); font-size: 0.9rem; }

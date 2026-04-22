@@ -26,12 +26,12 @@
         </div>
 
         <nav class="menu">
-          <a class="menu-primary menu-link" href="#patient-form">Novo receituário</a>
+          <a class="menu-primary menu-link" href="#clinical-form">Novo receituário</a>
         </nav>
 
         <div class="sidebar-footer">
           <p>LGPD ativa: dados protegidos</p>
-          <small>Finalidade assistencial, controle de acesso e validação por hash/QR.</small>
+          <small>Ferramenta educativa sem identificação pessoal e sem persistência de atendimento.</small>
         </div>
       </aside>
 
@@ -39,13 +39,13 @@
         <header class="topbar">
           <div class="topbar-actions">
             <button id="help-btn" class="ghost" type="button">Ajuda</button>
-            <button id="save-draft-btn" class="ghost" type="button">Salvar rascunho</button>
+            <button id="reset-form-btn" class="ghost" type="button">Limpar formulário</button>
             <button id="generate-document-btn" class="solid" type="button">Gerar documento</button>
           </div>
         </header>
 
         <section class="steps">
-          <div class="step active" data-step="1"><span>1</span> Dados do paciente</div>
+          <div class="step active" data-step="1"><span>1</span> Perfil clínico</div>
           <div class="step" data-step="2"><span>2</span> Avaliação e exames</div>
           <div class="step" data-step="3"><span>3</span> Documento e exportação</div>
         </section>
@@ -54,29 +54,10 @@
           <section class="main-column">
             <section class="panel" id="step-1-section">
               <div class="panel-head">
-                <h2>Dados do paciente</h2>
+                <h2>Perfil clínico</h2>
               </div>
 
-              <form id="patient-form">
-                <div class="grid">
-                  <label>
-                    Nome do médico
-                    <input id="doctor-name" type="text" placeholder="Ex.: Dr. João da Silva" />
-                  </label>
-                  <label>
-                    CRM
-                    <input id="doctor-crm" type="text" placeholder="Ex.: CRM-PE 12345" />
-                  </label>
-                  <label>
-                    Nome do paciente
-                    <input id="patient-name" type="text" placeholder="Ex.: Maria de Souza" />
-                  </label>
-                  <label>
-                    CPF do paciente
-                    <input id="patient-cpf" type="text" placeholder="Ex.: 000.000.000-00" />
-                  </label>
-                </div>
-
+              <form id="clinical-form">
                 <div class="grid">
                   <label>
                     Sexo
@@ -136,41 +117,29 @@
               </div>
 
               <label class="full">
-                Campo adicional (atestado, medicações, orientações)
+                Observações gerais (não inserir dados identificáveis)
                 <textarea
                   id="notes"
                   rows="4"
-                  placeholder="Ex.: Atestado de 2 dias. Prescrito losartana 50 mg 12/12h. Orientado retorno em 30 dias."
+                  placeholder="Ex.: Reforçar atividade física regular e retorno para avaliação preventiva."
                 ></textarea>
               </label>
             </section>
 
             <section class="panel" id="lgpd-panel">
-              <h2>Protocolo LGPD e segurança</h2>
-              <label class="consent-row">
-                <input id="lgpd-consent" type="checkbox" />
-                Confirmo que o paciente foi informado e autorizou o tratamento de dados pessoais e sensíveis para finalidade assistencial.
-              </label>
-              <p id="lgpd-status" class="lgpd-status lgpd-pending">LGPD pendente: registre a ciência/consentimento para emissão do documento.</p>
+              <h2>Privacidade e LGPD</h2>
+              <p class="lgpd-static">Ferramenta educacional sem coleta de dados pessoais identificáveis.</p>
               <ul class="lgpd-list">
-                <li>Uso mínimo de dados para atendimento, solicitação e validação do documento.</li>
-                <li>Proteção com HTTPS, código de verificação e hash de integridade.</li>
-                <li>Rascunhos ficam no navegador local e podem ser apagados a qualquer momento.</li>
+                <li>Não solicita identificadores pessoais ou profissionais.</li>
+                <li>Não salva rascunhos de atendimento localmente nem em banco.</li>
+                <li>Uso restrito a orientação preventiva baseada em perfil clínico.</li>
               </ul>
-              <div class="actions lgpd-actions">
-                <button id="clear-local-data-btn" type="button" class="lgpd-clear-btn">Limpar dados locais deste dispositivo</button>
-              </div>
             </section>
 
             <section class="panel" id="final-report">
               <h2>Documento do atendimento</h2>
               <div class="report-layout">
                 <pre id="report-content" class="report-pre">Preencha os campos para gerar o documento final.</pre>
-                <aside class="verify-box">
-                  <img id="verification-qr" alt="QR Code de verificação do documento" />
-                  <p>Código de verificação</p>
-                  <strong id="verification-code">Aguardando geração</strong>
-                </aside>
               </div>
             </section>
           </section>

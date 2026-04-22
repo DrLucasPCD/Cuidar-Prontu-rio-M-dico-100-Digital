@@ -1,4 +1,4 @@
-const form = document.getElementById("patient-form");
+const form = document.getElementById("clinical-form");
 const imcBox = document.getElementById("imc-box");
 const recList = document.getElementById("recommendations");
 const extraExamInput = document.getElementById("extra-exam-input");
@@ -11,21 +11,15 @@ const classificationInput = document.getElementById("classification");
 const classificationOptions = document.getElementById("classification-options");
 const classificationMatch = document.getElementById("classification-match");
 const reportContent = document.getElementById("report-content");
-const verificationQr = document.getElementById("verification-qr");
-const verificationCodeEl = document.getElementById("verification-code");
 const importDictBtn = document.getElementById("import-dict-btn");
 const resetDictBtn = document.getElementById("reset-dict-btn");
 const dictFileInput = document.getElementById("dict-file-input");
 const dictCount = document.getElementById("dict-count");
 const newRecordBtn = document.getElementById("new-record-btn");
-const recentBtn = document.getElementById("recent-btn");
+const resetFormBtn = document.getElementById("reset-form-btn");
 const formAnchor = document.getElementById("form-anchor");
-const lgpdConsent = document.getElementById("lgpd-consent");
-const lgpdStatus = document.getElementById("lgpd-status");
-const clearLocalDataBtn = document.getElementById("clear-local-data-btn");
 const EXTRA_CID11 = Array.isArray(window.CID11_EXTRA) ? window.CID11_EXTRA : [];
 const helpBtn = document.getElementById("help-btn");
-const saveDraftBtn = document.getElementById("save-draft-btn");
 const generateDocumentBtn = document.getElementById("generate-document-btn");
 const documentDialog = document.getElementById("document-dialog");
 const dialogPrintBtn = document.getElementById("dialog-print-btn");
@@ -35,9 +29,6 @@ const stepItems = [...document.querySelectorAll(".step[data-step]")];
 const step1Section = document.getElementById("step-1-section");
 const step2Section = document.getElementById("step-2-section");
 const step3Section = document.getElementById("final-report");
-const API_BASE = (window.CUIDAR_API_BASE || "/api").replace(/\/$/, "");
-let backendVerification = null;
-let backendWarned = false;
 
 const BASE_CATALOG = [
   { system: "CID-11", code: "5A11", name: "Diabetes mellitus tipo 2" },
@@ -270,24 +261,6 @@ function formatNowPtBr() {
   }).format(now);
 }
 
-function isLgpdConsentChecked() {
-  return Boolean(lgpdConsent && lgpdConsent.checked);
-}
-
-function updateLgpdStatus() {
-  if (!lgpdStatus) return;
-  lgpdStatus.classList.remove("lgpd-ok", "lgpd-pending");
-
-  if (isLgpdConsentChecked()) {
-    lgpdStatus.classList.add("lgpd-ok");
-    lgpdStatus.textContent = "LGPD confirmado: consentimento registrado e dados protegidos com mecanismos de segurança.";
-    return;
-  }
-
-  lgpdStatus.classList.add("lgpd-pending");
-  lgpdStatus.textContent = "LGPD pendente: registre a ciência/consentimento para emissão do documento.";
-}
-
 function categorizeSelectedRecommendations(recommendations) {
   const categories = {
     "Exames de sangue": [],
@@ -401,80 +374,7 @@ function getSelectedExamTexts() {
   return [...recommended, ...extra];
 }
 
-function hashString(input) {
-  let hash = 2166136261;
-  for (let i = 0; i < input.length; i += 1) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16).toUpperCase().padStart(8, "0");
-}
-
-function buildVerificationCode(baseText) {
-  const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
-  const digest = hashString(baseText).slice(0, 8);
-  return `CUIDAR-${stamp}-${digest}`;
-}
-
-function buildFallbackVerifyUrl(code, payload) {
-  const canUseCurrentOrigin = window.location.protocol === "http:" || window.location.protocol === "https:";
-  if (canUseCurrentOrigin) {
-    const url = new URL("/verify.html", window.location.origin);
-    url.searchParams.set("code", code);
-    url.searchParams.set("fallback", payload);
-    return url.toString();
-  }
-
-  const url = new URL("https://cuidar.local/verify");
-  url.searchParams.set("code", code);
-  url.searchParams.set("fallback", payload);
-  return url.toString();
-}
-
-async function issueVerificationOnBackend(report) {
-  if (!window.fetch) return false;
-  try {
-    const response = await fetch(`${API_BASE}/documents`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        content: report.text,
-        meta: {
-          source: window.location.pathname.includes("app-mobile") ? "app-web" : "web",
-          doctorName: document.getElementById("doctor-name")?.value || "",
-          doctorCrm: document.getElementById("doctor-crm")?.value || "",
-          patientName: document.getElementById("patient-name")?.value || "",
-          patientCpf: document.getElementById("patient-cpf")?.value || "",
-          lgpdConsent: isLgpdConsentChecked(),
-          lgpdProtocolVersion: "LGPD-v1"
-        }
-      })
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const data = await response.json();
-    const frontendVerifyUrl = new URL("/verify.html", window.location.origin);
-    frontendVerifyUrl.searchParams.set("code", data.code);
-    backendVerification = {
-      contentHash: report.contentHash,
-      code: data.code,
-      verifyUrl: frontendVerifyUrl.toString(),
-      qrPayload: frontendVerifyUrl.toString()
-    };
-    return true;
-  } catch {
-    if (!backendWarned) {
-      backendWarned = true;
-      console.warn(`Backend de validação indisponível em ${API_BASE}.`);
-    }
-    return false;
-  }
-}
-
 function buildReport() {
-  const doctorName = document.getElementById("doctor-name").value.trim() || "não informado";
-  const doctorCrm = document.getElementById("doctor-crm").value.trim() || "não informado";
-  const patientName = document.getElementById("patient-name").value.trim() || "não informado";
-  const patientCpf = document.getElementById("patient-cpf").value.trim() || "não informado";
   const sex = document.getElementById("sex").value || "não informado";
   const age = document.getElementById("age").value || "não informada";
   const weight = document.getElementById("weight").value || "não informado";
@@ -494,168 +394,38 @@ function buildReport() {
   const examLines = buildExamCategoryLines(categorized);
   const imcText = imcBox.textContent || "IMC não calculado";
   const generatedAt = formatNowPtBr();
-  const lgpdConsentText = isLgpdConsentChecked() ? "registrado no atendimento" : "não registrado";
 
-  const baseLines = [
-    "CUIDAR+ | PRONTUÁRIO MÉDICO 100% DIGITAL",
-    "SOLICITAÇÃO DE EXAME",
+  return [
+    "CUIDAR+ | GUIA EDUCATIVO DE PREVENÇÃO EM SAÚDE",
+    "ORIENTAÇÃO PREVENTIVA",
     "",
-    `Paciente: ${patientName}`,
-    `CPF: ${patientCpf}`,
     `Sexo: ${sex}   Idade: ${age}`,
     `Peso: ${weight} kg   Altura: ${height} m`,
     `${imcText}`,
     "",
     `Comorbidades/fatores: ${riskList}`,
     "",
-    `Classificação diagnóstica (CID-11/APS): ${clsText}`,
+    `Classificação de referência (CID-11/APS): ${clsText}`,
     "",
-    "Exames solicitados:",
-    ...(examLines.length ? examLines : ["  Nenhum exame selecionado.", ""]),
-    "Campo adicional (atestado, medicações, orientações):",
+    "Exames/prevenções selecionados:",
+    ...(examLines.length ? examLines : ["  Nenhuma recomendação selecionada.", ""]),
+    "Observações gerais:",
     ...(notes ? [`${notes}`] : ["sem observações adicionais"]),
     "",
-    "Conformidade LGPD:",
-    "- Finalidade: assistência em saúde na APS.",
-    `- Consentimento/ciência do paciente: ${lgpdConsentText}.`,
-    "- Segurança: dados protegidos com HTTPS, hash de integridade e QR Code de validação.",
+    "Privacidade e LGPD:",
+    "- Esta ferramenta não solicita identificadores pessoais ou profissionais.",
+    "- Nenhum dado individual do atendimento é salvo localmente ou em banco.",
+    "- Uso exclusivo para apoio educativo em prevenção na APS.",
     "",
-    `Data e hora da solicitação: ${generatedAt}`,
-    "",
-    `Médico solicitante: ${doctorName}`,
-    `CRM: ${doctorCrm}`
-  ];
-
-  const baseText = baseLines.join("\n");
-  const contentHash = hashString(baseText);
-  const verificationCode = (backendVerification && backendVerification.contentHash === contentHash)
-    ? backendVerification.code
-    : buildVerificationCode(baseText);
-  const verificationPayload = [
-    `app=CUIDAR+`,
-    `tipo=solicitacao_exame`,
-    `codigo=${verificationCode}`,
-    `emitido=${generatedAt}`,
-    `hash=${hashString(baseText)}`
-  ].join("|");
-  const verifyUrl = (backendVerification && backendVerification.contentHash === contentHash)
-    ? backendVerification.verifyUrl
-    : buildFallbackVerifyUrl(verificationCode, verificationPayload);
-  const qrPayload = (backendVerification && backendVerification.contentHash === contentHash)
-    ? (backendVerification.qrPayload || backendVerification.verifyUrl || verifyUrl)
-    : verifyUrl;
-
-  const text = [
-    ...baseLines,
-    "",
-    `Código de verificação digital: ${verificationCode}`,
-    `URL de validação: ${verifyUrl}`,
-    "Valide a integridade deste documento pelo QR Code."
+    `Gerado em: ${generatedAt}`
   ].join("\n");
-
-  return { text, verificationCode, verificationPayload: qrPayload, contentHash, verifyUrl };
 }
 
 function updateReportPreview() {
-  updateLgpdStatus();
-  const report = buildReport();
-  reportContent.textContent = report.text;
-
-  if (verificationCodeEl) {
-    verificationCodeEl.textContent = report.verificationCode;
-  }
-
-  if (verificationQr) {
-    verificationQr.onerror = () => {
-      verificationQr.alt = "Não foi possível carregar o QR Code. Use o código de verificação textual.";
-    };
-    verificationQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&data=${encodeURIComponent(report.verificationPayload)}`;
-  }
+  reportContent.textContent = buildReport();
 }
 
-async function ensureBackendVerification() {
-  if (lgpdConsent && !lgpdConsent.checked) {
-    alert("Para emitir, imprimir, exportar ou copiar o documento, registre a ciência/consentimento LGPD do paciente.");
-    lgpdConsent.focus();
-    return false;
-  }
-
-  const report = buildReport();
-  if (backendVerification && backendVerification.contentHash === report.contentHash) return true;
-  const ok = await issueVerificationOnBackend(report);
-  if (ok) updateReportPreview();
-  return true;
-}
-
-function saveDraft() {
-  const payload = {
-    doctorName: document.getElementById("doctor-name").value,
-    doctorCrm: document.getElementById("doctor-crm").value,
-    patientName: document.getElementById("patient-name").value,
-    patientCpf: document.getElementById("patient-cpf").value,
-    sex: document.getElementById("sex").value,
-    age: document.getElementById("age").value,
-    weight: document.getElementById("weight").value,
-    height: document.getElementById("height").value,
-    classification: classificationInput.value,
-    notes: document.getElementById("notes").value,
-    lgpdConsent: isLgpdConsentChecked(),
-    comorbidity: [...document.querySelectorAll(".comorbidity-input:checked")].map((el) => el.value),
-    selectedRecommendations: [...document.querySelectorAll(".rec-check:checked")].map((el) => el.dataset.recommendation),
-    extraExams: [...extraExamsList.querySelectorAll(".extra-check")].map((el) => ({
-      name: el.dataset.recommendation,
-      checked: el.checked
-    }))
-  };
-  localStorage.setItem("prontuarioDraftV1", JSON.stringify(payload));
-}
-
-function loadDraft() {
-  const raw = localStorage.getItem("prontuarioDraftV1");
-  if (!raw) return;
-  try {
-    const d = JSON.parse(raw);
-    document.getElementById("doctor-name").value = d.doctorName || "";
-    document.getElementById("doctor-crm").value = d.doctorCrm || "";
-    document.getElementById("patient-name").value = d.patientName || "";
-    document.getElementById("patient-cpf").value = d.patientCpf || "";
-    document.getElementById("sex").value = d.sex || "";
-    document.getElementById("age").value = d.age || "";
-    document.getElementById("weight").value = d.weight || "";
-    document.getElementById("height").value = d.height || "";
-    classificationInput.value = d.classification || "";
-    document.getElementById("notes").value = d.notes || "";
-    if (lgpdConsent) lgpdConsent.checked = Boolean(d.lgpdConsent);
-
-    const selected = new Set(d.comorbidity || []);
-    [...document.querySelectorAll(".comorbidity-input")].forEach((el) => {
-      el.checked = selected.has(el.value);
-    });
-
-    if (document.getElementById("sex").value && document.getElementById("age").value && document.getElementById("weight").value && document.getElementById("height").value) {
-      form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
-      const selectedRec = new Set(d.selectedRecommendations || []);
-      [...document.querySelectorAll(".rec-check")].forEach((el) => {
-        el.checked = selectedRec.has(el.dataset.recommendation);
-      });
-    }
-
-    extraExamsList.innerHTML = "";
-    (d.extraExams || []).forEach((exam) => {
-      addExtraExamItem(exam?.name || "", Boolean(exam?.checked));
-    });
-
-    updateLgpdStatus();
-    updateReportPreview();
-  } catch {
-    // ignore malformed draft
-  }
-}
-
-function clearLocalPatientData() {
-  localStorage.removeItem("prontuarioDraftV1");
-  backendVerification = null;
-
+function clearCurrentFormData() {
   if (form) form.reset();
   classificationInput.value = "";
   classificationMatch.textContent = "";
@@ -664,15 +434,6 @@ function clearLocalPatientData() {
   extraExamsList.innerHTML = "";
   if (extraExamInput) extraExamInput.value = "";
   imcBox.textContent = "Preencha os dados para calcular IMC.";
-
-  if (verificationCodeEl) verificationCodeEl.textContent = "Aguardando geração";
-  if (verificationQr) {
-    verificationQr.removeAttribute("src");
-    verificationQr.alt = "QR Code de verificação do documento";
-  }
-
-  if (lgpdConsent) lgpdConsent.checked = false;
-  updateLgpdStatus();
   updateReportPreview();
   setActiveStep(1);
 }
@@ -849,8 +610,6 @@ resetDictBtn.addEventListener("click", () => {
 });
 
 copyBtn.addEventListener("click", async () => {
-  const canProceed = await ensureBackendVerification();
-  if (!canProceed) return;
   updateReportPreview();
   try {
     await navigator.clipboard.writeText(reportContent.textContent);
@@ -863,31 +622,22 @@ copyBtn.addEventListener("click", async () => {
   }
 });
 
-printBtn.addEventListener("click", async () => {
-  const canProceed = await ensureBackendVerification();
-  if (!canProceed) return;
+printBtn.addEventListener("click", () => {
   updateReportPreview();
   window.print();
 });
 
-pdfBtn.addEventListener("click", async () => {
-  const canProceed = await ensureBackendVerification();
-  if (!canProceed) return;
+pdfBtn.addEventListener("click", () => {
   updateReportPreview();
   window.print();
 });
 
 document.getElementById("notes").addEventListener("input", updateReportPreview);
-document.getElementById("doctor-name").addEventListener("input", updateReportPreview);
-document.getElementById("doctor-crm").addEventListener("input", updateReportPreview);
-document.getElementById("patient-name").addEventListener("input", updateReportPreview);
-document.getElementById("patient-cpf").addEventListener("input", updateReportPreview);
 document.getElementById("sex").addEventListener("change", updateReportPreview);
 document.getElementById("age").addEventListener("input", updateReportPreview);
 document.getElementById("weight").addEventListener("input", updateReportPreview);
 document.getElementById("height").addEventListener("input", updateReportPreview);
 [...document.querySelectorAll(".comorbidity-input")].forEach((cb) => cb.addEventListener("change", updateReportPreview));
-if (lgpdConsent) lgpdConsent.addEventListener("change", updateReportPreview);
 recList.addEventListener("change", (event) => {
   if (event.target.classList.contains("rec-check")) updateReportPreview();
 });
@@ -919,53 +669,24 @@ if (addExtraExamBtn && extraExamInput) {
 if (newRecordBtn && formAnchor) {
   newRecordBtn.addEventListener("click", () => {
     formAnchor.scrollIntoView({ behavior: "smooth", block: "start" });
-    document.getElementById("doctor-name").focus();
+    document.getElementById("sex").focus();
   });
 }
 
-if (clearLocalDataBtn) {
-  clearLocalDataBtn.addEventListener("click", () => {
-    const confirmed = window.confirm("Remover os dados locais do atendimento neste dispositivo?");
-    if (!confirmed) return;
-    clearLocalPatientData();
-    alert("Dados locais removidos deste dispositivo.");
-  });
-}
-
-if (recentBtn) {
-  recentBtn.addEventListener("click", () => {
-    const hasDraft = Boolean(localStorage.getItem("prontuarioDraftV1"));
-    if (!hasDraft) {
-      alert("Não há rascunhos recentes salvos.");
-      return;
-    }
-    loadDraft();
-    if (formAnchor) formAnchor.scrollIntoView({ behavior: "smooth", block: "start" });
-    const doctorInput = document.getElementById("doctor-name");
-    if (doctorInput) doctorInput.focus();
+if (resetFormBtn) {
+  resetFormBtn.addEventListener("click", () => {
+    clearCurrentFormData();
   });
 }
 
 if (helpBtn) {
   helpBtn.addEventListener("click", () => {
-    alert("Preencha os dados do paciente, clique em 'Gerar recomendações', selecione os exames no resumo, preencha CID/conduta, confirme o protocolo LGPD e use 'Gerar documento' para imprimir ou salvar em PDF.");
-  });
-}
-
-if (saveDraftBtn) {
-  saveDraftBtn.addEventListener("click", () => {
-    saveDraft();
-    saveDraftBtn.textContent = "Rascunho salvo";
-    setTimeout(() => {
-      saveDraftBtn.textContent = "Salvar rascunho";
-    }, 1200);
+    alert("Este sistema funciona como guia educativo de prevenção. Não solicita nem salva dados pessoais identificáveis.");
   });
 }
 
 if (generateDocumentBtn && documentDialog) {
-  generateDocumentBtn.addEventListener("click", async () => {
-    const canProceed = await ensureBackendVerification();
-    if (!canProceed) return;
+  generateDocumentBtn.addEventListener("click", () => {
     setActiveStep(3);
     updateReportPreview();
     documentDialog.showModal();
@@ -973,18 +694,14 @@ if (generateDocumentBtn && documentDialog) {
 }
 
 if (dialogPrintBtn && documentDialog) {
-  dialogPrintBtn.addEventListener("click", async () => {
-    const canProceed = await ensureBackendVerification();
-    if (!canProceed) return;
+  dialogPrintBtn.addEventListener("click", () => {
     documentDialog.close();
     window.print();
   });
 }
 
 if (dialogPdfBtn && documentDialog) {
-  dialogPdfBtn.addEventListener("click", async () => {
-    const canProceed = await ensureBackendVerification();
-    if (!canProceed) return;
+  dialogPdfBtn.addEventListener("click", () => {
     documentDialog.close();
     window.print();
     setTimeout(() => {
@@ -1035,6 +752,5 @@ if (step1Section && step2Section && step3Section) {
 loadCatalog();
 mountClassificationOptions();
 updateCatalogCount();
-loadDraft();
 updateReportPreview();
 setActiveStep(1);

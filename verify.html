@@ -75,7 +75,7 @@
     <main>
       <section class="card">
         <h1>Validação de Documento Digital</h1>
-        <p class="muted">Informe o código de verificação para consultar autenticidade e integridade do documento.</p>
+        <p class="muted">No modo educativo sem persistência, a validação online fica desativada para evitar armazenamento de dados individuais.</p>
         <div class="row">
           <input id="code-input" type="text" placeholder="Ex.: CUIDAR-20260421-ABC123" />
           <button id="check-btn" type="button">Validar</button>
@@ -155,12 +155,7 @@ Observação:
 `Código: ${data.code}
 Emitido em: ${new Date(data.issuedAt).toLocaleString("pt-BR")}
 Hash: ${data.contentHash}
-Médico: ${data.doctorName}
-CRM: ${data.doctorCrm}
-Paciente: ${data.patientName}
-CPF: ${data.patientCpf || data.patientCpfMasked || "não informado"}
-LGPD: ${data.lgpdConsent ? "consentimento registrado" : "consentimento não informado"}
-Protocolo: ${data.lgpdProtocolVersion || "LGPD-v1"}
+Modo: educativo sem persistência
 
 Prévia:
 ${data.preview}`;
@@ -176,7 +171,7 @@ Hash: ${fallback.hash || "não informado"}
 
 Observação:
 - Este resultado é informativo.
-- Para autenticidade jurídica, valide quando houver acesso ao backend.`;
+- A funcionalidade de validação permanece desativada para não persistir dados de atendimento.`;
           } else {
             statusEl.className = "bad";
             statusEl.textContent = "Falha de comunicação com o servidor de validação.";

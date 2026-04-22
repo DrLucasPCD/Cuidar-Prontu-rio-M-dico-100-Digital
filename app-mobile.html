@@ -42,19 +42,13 @@
               <button id="copy-btn" type="button" class="tile-btn"><span>📄</span><b>Copiar texto</b></button>
               <button id="print-btn" type="button" class="tile-btn"><span>🖨️</span><b>Imprimir</b></button>
               <button id="pdf-btn" type="button" class="tile-btn"><span>📑</span><b>Exportar PDF</b></button>
-              <button id="recent-btn" type="button" class="tile-btn"><span>🕘</span><b>Recentes</b></button>
+              <button id="reset-form-btn" type="button" class="tile-btn"><span>🧹</span><b>Limpar formulário</b></button>
             </div>
           </section>
 
           <section id="form-anchor" class="card">
-            <h2>Dados do paciente</h2>
-            <form id="patient-form">
-              <div class="grid">
-                <label>Nome do médico<input id="doctor-name" type="text" /></label>
-                <label>CRM<input id="doctor-crm" type="text" /></label>
-                <label>Nome do paciente<input id="patient-name" type="text" /></label>
-                <label>CPF do paciente<input id="patient-cpf" type="text" /></label>
-              </div>
+            <h2>Perfil clínico</h2>
+            <form id="clinical-form">
               <div class="grid">
                 <label>
                   Sexo
@@ -114,37 +108,25 @@
               <input id="dict-file-input" type="file" accept=".json,.csv,text/csv,application/json" hidden />
               <span id="dict-count" class="muted"></span>
             </div>
-            <label class="full">Campo adicional (atestado, medicações, orientações)
+            <label class="full">Observações gerais (não inserir dados identificáveis)
               <textarea id="notes" rows="4"></textarea>
             </label>
           </section>
 
           <section class="card">
-            <h2>Protocolo LGPD e segurança</h2>
-            <label class="consent-row">
-              <input id="lgpd-consent" type="checkbox" />
-              Confirmo que o paciente foi informado e autorizou o tratamento de dados pessoais e sensíveis para finalidade assistencial.
-            </label>
-            <p id="lgpd-status" class="lgpd-status lgpd-pending">LGPD pendente: registre a ciência/consentimento para emissão do documento.</p>
+            <h2>Privacidade e LGPD</h2>
+            <p class="lgpd-static">Ferramenta educacional sem coleta de dados pessoais identificáveis.</p>
             <ul class="lgpd-list">
-              <li>Uso mínimo de dados para atendimento, solicitação e validação do documento.</li>
-              <li>Proteção com HTTPS, código de verificação e hash de integridade.</li>
-              <li>Rascunhos ficam no navegador local e podem ser apagados a qualquer momento.</li>
+              <li>Não solicita identificadores pessoais ou profissionais.</li>
+              <li>Não salva rascunhos de atendimento localmente nem em banco.</li>
+              <li>Uso restrito a orientação preventiva baseada em perfil clínico.</li>
             </ul>
-            <div class="actions lgpd-actions">
-              <button id="clear-local-data-btn" type="button" class="lgpd-clear-btn">Limpar dados locais deste dispositivo</button>
-            </div>
           </section>
 
           <section class="card" id="final-report">
             <h2>Documento do atendimento</h2>
             <div class="report-layout">
               <pre id="report-content" class="report-pre">Preencha os campos para gerar o documento final.</pre>
-              <aside class="verify-box">
-                <img id="verification-qr" alt="QR Code de verificação do documento" />
-                <p>Código de verificação</p>
-                <strong id="verification-code">Aguardando geração</strong>
-              </aside>
             </div>
           </section>
       </div>

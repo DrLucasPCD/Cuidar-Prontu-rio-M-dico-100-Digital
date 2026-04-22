@@ -1,4 +1,4 @@
-# Cuidar+ Prontuário Médico 100% Digital
+# Cuidar+ Guia Educativo de Prevenção
 
 ## Execução local
 
@@ -11,33 +11,20 @@ node server.js
 - Web: [http://localhost:3000/index.html](http://localhost:3000/index.html)
 - App web: [http://localhost:3000/app-mobile.html](http://localhost:3000/app-mobile.html)
 
-## Validação digital (QR + código)
+## Escopo da ferramenta
 
-- Ao gerar/copiar/imprimir/exportar documento, o frontend tenta emitir registro no backend.
-- O backend gera:
-  - código único de verificação
-  - hash de integridade do documento
-  - URL de validação
-- O QR Code no documento aponta para a validação.
-- Se o backend não estiver disponível, o QR aponta para `verify.html` com fallback informativo (não vira busca do Google).
+- A aplicação funciona como guia educativo de prevenção em saúde.
+- Não solicita dados identificáveis de pessoas ou profissionais.
+- Campos de identificação pessoal/profissional foram removidos.
+- Não há salvamento de rascunho de atendimento.
+- Não há persistência de dados de atendimento em banco.
+- Geração de documento é local (visualização/cópia/impressão/PDF).
 
-## Protocolo LGPD (frontend + documento)
+## Privacidade e LGPD
 
-- O sistema possui bloco específico de LGPD nas versões web e app web.
-- Para emitir/imprimir/exportar/copiar documento, é necessário marcar a ciência/consentimento LGPD do paciente.
-- O documento final inclui seção de conformidade com:
-  - finalidade assistencial na APS,
-  - consentimento registrado no atendimento,
-  - mecanismos de proteção (HTTPS + hash + QR de validação).
-- Há botão para limpar os dados locais do atendimento no dispositivo.
-
-Página de validação:
-- [http://localhost:3000/verify.html](http://localhost:3000/verify.html)
-
-## Arquivos de backend
-
-- Servidor/API: `/server.js`
-- Banco local (JSON): `/data/verification-db.json`
+- O documento final reforça que o uso é educativo e sem coleta de identificadores.
+- O único armazenamento local mantido é o dicionário de classificação CID/APS (`classificationCatalogV1`), sem vínculo com indivíduos.
+- A rota de validação ([http://localhost:3000/verify.html](http://localhost:3000/verify.html)) permanece apenas informativa no modo sem persistência.
 
 ---
 
@@ -61,18 +48,15 @@ firebase login
 firebase deploy
 ```
 
-Isso publica:
-- frontend (Hosting)
-- API `/api/**` via Cloud Functions (`functions/index.js`)
-- regras do Realtime Database (`database.rules.json`)
+No modo educativo, os endpoints de documentos/validação/auditoria retornam indisponível para evitar persistência.
 
 ### Sem Firebase Hosting (ex.: Netlify)
 
 Pode usar normalmente. Nesse caso:
 
-1. Publique **apenas functions + database rules**:
+1. Publique **apenas functions** (se quiser manter respostas de API indisponível):
 ```bash
-firebase deploy --only functions,database
+firebase deploy --only functions
 ```
 
 2. O frontend usa a API externa configurada em `/config.js`:
@@ -81,11 +65,3 @@ window.CUIDAR_API_BASE = "https://southamerica-east1-cuidarmais-7d01d.cloudfunct
 ```
 
 3. Publique os arquivos estáticos normalmente no Netlify.
-
-### 3) Endpoints de validação (Firebase)
-
-- `POST /api/documents`
-- `GET /api/verify/:code`
-- `GET /api/audit/:code`
-
-O frontend já está preparado para esses endpoints e o QR passa a validar com backend real.
