@@ -30,7 +30,8 @@ body {
 .card h2 { margin: 0 0 12px; font-size: 1.12rem; }
 .quick-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .tile-btn { border: 1px solid #e2e8ee; background: #f7f9fb; border-radius: 14px; min-height: 96px; display: grid; place-content: center; gap: 6px; text-align: center; }
-.tile-btn span { font-size: 1.6rem; }
+.tile-btn span { font-size: 1.6rem; color: #1b6f74; }
+.tile-btn b { color: #16344a; }
 .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 label { display: grid; gap: 6px; font-size: 0.9rem; }
 input:not([type="checkbox"]), select, textarea { width: 100%; border: 1px solid #cfd9e2; border-radius: 10px; padding: 10px; font: inherit; }

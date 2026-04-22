@@ -13,6 +13,7 @@ const resetDictBtn = document.getElementById("reset-dict-btn");
 const dictFileInput = document.getElementById("dict-file-input");
 const dictCount = document.getElementById("dict-count");
 const newRecordBtn = document.getElementById("new-record-btn");
+const recentBtn = document.getElementById("recent-btn");
 const formAnchor = document.getElementById("form-anchor");
 const EXTRA_CID11 = Array.isArray(window.CID11_EXTRA) ? window.CID11_EXTRA : [];
 const helpBtn = document.getElementById("help-btn");
@@ -561,6 +562,20 @@ if (newRecordBtn && formAnchor) {
   newRecordBtn.addEventListener("click", () => {
     formAnchor.scrollIntoView({ behavior: "smooth", block: "start" });
     document.getElementById("doctor-name").focus();
+  });
+}
+
+if (recentBtn) {
+  recentBtn.addEventListener("click", () => {
+    const hasDraft = Boolean(localStorage.getItem("prontuarioDraftV1"));
+    if (!hasDraft) {
+      alert("Não há rascunhos recentes salvos.");
+      return;
+    }
+    loadDraft();
+    if (formAnchor) formAnchor.scrollIntoView({ behavior: "smooth", block: "start" });
+    const doctorInput = document.getElementById("doctor-name");
+    if (doctorInput) doctorInput.focus();
   });
 }
 
