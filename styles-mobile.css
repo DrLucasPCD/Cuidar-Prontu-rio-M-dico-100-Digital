@@ -45,6 +45,9 @@ button { font: inherit; border-radius: 10px; border: 1px solid #0d7f84; backgrou
 .hint, .muted { color: var(--muted); font-size: 0.9rem; }
 .list { margin: 0; padding-left: 18px; } .list li { margin: 8px 0; }
 .recommendation-choice { display: flex; gap: 8px; align-items: flex-start; }
+.extra-exam-tools { margin-top: 10px; display: grid; gap: 8px; }
+#extra-exams-list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.extra-remove-btn { border: 1px solid #d0dbe6; background: #fff; color: #4b6278; font-weight: 500; padding: 6px 8px; border-radius: 8px; }
 .dictionary-tools { display: grid; gap: 8px; margin-top: 10px; }
 .report-pre { margin: 0; border: 1px solid #d9e1e8; border-radius: 12px; background: #fafcfd; padding: 12px; white-space: pre-wrap; line-height: 1.45; font-family: "Consolas","Courier New",monospace; font-size: 0.88rem; }
 .report-layout { display: grid; gap: 10px; }

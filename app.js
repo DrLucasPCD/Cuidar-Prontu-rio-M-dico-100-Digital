@@ -1,6 +1,9 @@
 const form = document.getElementById("patient-form");
 const imcBox = document.getElementById("imc-box");
 const recList = document.getElementById("recommendations");
+const extraExamInput = document.getElementById("extra-exam-input");
+const addExtraExamBtn = document.getElementById("add-extra-exam-btn");
+const extraExamsList = document.getElementById("extra-exams-list");
 const copyBtn = document.getElementById("copy-btn");
 const printBtn = document.getElementById("print-btn");
 const pdfBtn = document.getElementById("pdf-btn");
@@ -336,6 +339,47 @@ function buildExamCategoryLines(categories) {
   return lines;
 }
 
+function addExtraExamItem(name, checked = true) {
+  const examName = String(name || "").trim();
+  if (!examName) return;
+
+  const li = document.createElement("li");
+  const label = document.createElement("label");
+  label.className = "recommendation-choice";
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.className = "extra-check";
+  checkbox.checked = checked;
+  checkbox.dataset.recommendation = examName;
+
+  const span = document.createElement("span");
+  span.textContent = examName;
+
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
+  removeBtn.className = "extra-remove-btn";
+  removeBtn.textContent = "Remover";
+  removeBtn.addEventListener("click", () => {
+    li.remove();
+    updateReportPreview();
+  });
+
+  label.appendChild(checkbox);
+  label.appendChild(span);
+  li.appendChild(label);
+  li.appendChild(removeBtn);
+  extraExamsList.appendChild(li);
+}
+
+function getSelectedExamTexts() {
+  const recommended = [...recList.querySelectorAll(".rec-check:checked")]
+    .map((input) => input.dataset.recommendation);
+  const extra = [...extraExamsList.querySelectorAll(".extra-check:checked")]
+    .map((input) => input.dataset.recommendation);
+  return [...recommended, ...extra];
+}
+
 function hashString(input) {
   let hash = 2166136261;
   for (let i = 0; i < input.length; i += 1) {
@@ -422,8 +466,7 @@ function buildReport() {
   let clsText = currentCls || "não informado";
   if (found.exact) clsText = formatClassificationMatch(found.exact);
 
-  const selectedRecommendations = [...recList.querySelectorAll(".rec-check:checked")]
-    .map((input) => input.dataset.recommendation);
+  const selectedRecommendations = getSelectedExamTexts();
   const categorized = categorizeSelectedRecommendations(selectedRecommendations);
   const examLines = buildExamCategoryLines(categorized);
   const imcText = imcBox.textContent || "IMC não calculado";
@@ -445,7 +488,8 @@ function buildReport() {
     "",
     "Exames solicitados:",
     ...(examLines.length ? examLines : ["  Nenhum exame selecionado.", ""]),
-    `Observações clínicas/conduta: ${notes}`,
+    "Campo adicional (atestado, medicações, orientações):",
+    ...(notes ? [`${notes}`] : ["sem observações adicionais"]),
     "",
     `Data e hora da solicitação: ${generatedAt}`,
     "",
@@ -520,7 +564,11 @@ function saveDraft() {
     classification: classificationInput.value,
     notes: document.getElementById("notes").value,
     comorbidity: [...document.querySelectorAll(".comorbidity-input:checked")].map((el) => el.value),
-    selectedRecommendations: [...document.querySelectorAll(".rec-check:checked")].map((el) => el.dataset.recommendation)
+    selectedRecommendations: [...document.querySelectorAll(".rec-check:checked")].map((el) => el.dataset.recommendation),
+    extraExams: [...extraExamsList.querySelectorAll(".extra-check")].map((el) => ({
+      name: el.dataset.recommendation,
+      checked: el.checked
+    }))
   };
   localStorage.setItem("prontuarioDraftV1", JSON.stringify(payload));
 }
@@ -553,6 +601,12 @@ function loadDraft() {
         el.checked = selectedRec.has(el.dataset.recommendation);
       });
     }
+
+    extraExamsList.innerHTML = "";
+    (d.extraExams || []).forEach((exam) => {
+      addExtraExamItem(exam?.name || "", Boolean(exam?.checked));
+    });
+
     updateReportPreview();
   } catch {
     // ignore malformed draft
@@ -769,6 +823,30 @@ document.getElementById("height").addEventListener("input", updateReportPreview)
 recList.addEventListener("change", (event) => {
   if (event.target.classList.contains("rec-check")) updateReportPreview();
 });
+
+if (extraExamsList) {
+  extraExamsList.addEventListener("change", (event) => {
+    if (event.target.classList.contains("extra-check")) updateReportPreview();
+  });
+}
+
+if (addExtraExamBtn && extraExamInput) {
+  addExtraExamBtn.addEventListener("click", () => {
+    const name = extraExamInput.value.trim();
+    if (!name) return;
+    addExtraExamItem(name, true);
+    extraExamInput.value = "";
+    updateReportPreview();
+    extraExamInput.focus();
+  });
+
+  extraExamInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addExtraExamBtn.click();
+    }
+  });
+}
 
 if (newRecordBtn && formAnchor) {
   newRecordBtn.addEventListener("click", () => {

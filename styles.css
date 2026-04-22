@@ -333,6 +333,27 @@ button {
   margin-top: 3px;
 }
 
+.extra-exam-tools {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+#extra-exams-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.extra-remove-btn {
+  border: 1px solid #d0dbe6;
+  background: #fff;
+  color: #4b6278;
+  font-weight: 500;
+  padding: 6px 8px;
+}
+
 .muted {
   color: var(--muted);
 }
