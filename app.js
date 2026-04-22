@@ -8,6 +8,8 @@ const classificationInput = document.getElementById("classification");
 const classificationOptions = document.getElementById("classification-options");
 const classificationMatch = document.getElementById("classification-match");
 const reportContent = document.getElementById("report-content");
+const verificationQr = document.getElementById("verification-qr");
+const verificationCodeEl = document.getElementById("verification-code");
 const importDictBtn = document.getElementById("import-dict-btn");
 const resetDictBtn = document.getElementById("reset-dict-btn");
 const dictFileInput = document.getElementById("dict-file-input");
@@ -27,6 +29,8 @@ const stepItems = [...document.querySelectorAll(".step[data-step]")];
 const step1Section = document.getElementById("step-1-section");
 const step2Section = document.getElementById("step-2-section");
 const step3Section = document.getElementById("final-report");
+let backendVerification = null;
+let backendWarned = false;
 
 const BASE_CATALOG = [
   { system: "CID-11", code: "5A11", name: "Diabetes mellitus tipo 2" },
@@ -331,6 +335,56 @@ function buildExamCategoryLines(categories) {
   return lines;
 }
 
+function hashString(input) {
+  let hash = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).toUpperCase().padStart(8, "0");
+}
+
+function buildVerificationCode(baseText) {
+  const stamp = new Date().toISOString().slice(0, 10).replaceAll("-", "");
+  const digest = hashString(baseText).slice(0, 8);
+  return `CUIDAR-${stamp}-${digest}`;
+}
+
+async function issueVerificationOnBackend(report) {
+  if (!window.fetch) return false;
+  try {
+    const response = await fetch("/api/documents", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: report.text,
+        meta: {
+          source: window.location.pathname.includes("app-mobile") ? "app-web" : "web",
+          doctorName: document.getElementById("doctor-name")?.value || "",
+          doctorCrm: document.getElementById("doctor-crm")?.value || "",
+          patientName: document.getElementById("patient-name")?.value || "",
+          patientCpf: document.getElementById("patient-cpf")?.value || ""
+        }
+      })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    backendVerification = {
+      contentHash: report.contentHash,
+      code: data.code,
+      verifyUrl: data.verifyUrl,
+      qrPayload: data.qrPayload || data.verifyUrl
+    };
+    return true;
+  } catch {
+    if (!backendWarned) {
+      backendWarned = true;
+      console.warn("Backend de validação indisponível. Inicie com: node server.js");
+    }
+    return false;
+  }
+}
+
 function buildReport() {
   const doctorName = document.getElementById("doctor-name").value.trim() || "não informado";
   const doctorCrm = document.getElementById("doctor-crm").value.trim() || "não informado";
@@ -357,7 +411,7 @@ function buildReport() {
   const imcText = imcBox.textContent || "IMC não calculado";
   const generatedAt = formatNowPtBr();
 
-  return [
+  const baseLines = [
     "CUIDAR+ | PRONTUÁRIO MÉDICO 100% DIGITAL",
     "SOLICITAÇÃO DE EXAME",
     "",
@@ -378,14 +432,61 @@ function buildReport() {
     `Data e hora da solicitação: ${generatedAt}`,
     "",
     `Médico solicitante: ${doctorName}`,
-    `CRM: ${doctorCrm}`,
+    `CRM: ${doctorCrm}`
+  ];
+
+  const baseText = baseLines.join("\n");
+  const contentHash = hashString(baseText);
+  const verificationCode = (backendVerification && backendVerification.contentHash === contentHash)
+    ? backendVerification.code
+    : buildVerificationCode(baseText);
+  const verificationPayload = [
+    `app=CUIDAR+`,
+    `tipo=solicitacao_exame`,
+    `codigo=${verificationCode}`,
+    `emitido=${generatedAt}`,
+    `hash=${hashString(baseText)}`
+  ].join("|");
+  const verifyUrl = (backendVerification && backendVerification.contentHash === contentHash)
+    ? backendVerification.verifyUrl
+    : "";
+  const qrPayload = (backendVerification && backendVerification.contentHash === contentHash)
+    ? (backendVerification.qrPayload || backendVerification.verifyUrl || verificationPayload)
+    : verificationPayload;
+
+  const text = [
+    ...baseLines,
     "",
-    "Assinatura: ___________________________________________"
+    `Código de verificação digital: ${verificationCode}`,
+    ...(verifyUrl ? [`URL de validação: ${verifyUrl}`] : []),
+    "Valide a integridade deste documento pelo QR Code."
   ].join("\n");
+
+  return { text, verificationCode, verificationPayload: qrPayload, contentHash, verifyUrl };
 }
 
 function updateReportPreview() {
-  reportContent.textContent = buildReport();
+  const report = buildReport();
+  reportContent.textContent = report.text;
+
+  if (verificationCodeEl) {
+    verificationCodeEl.textContent = report.verificationCode;
+  }
+
+  if (verificationQr) {
+    verificationQr.onerror = () => {
+      verificationQr.alt = "Não foi possível carregar o QR Code. Use o código de verificação textual.";
+    };
+    verificationQr.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&ecc=M&data=${encodeURIComponent(report.verificationPayload)}`;
+  }
+}
+
+async function ensureBackendVerification() {
+  const report = buildReport();
+  if (backendVerification && backendVerification.contentHash === report.contentHash) return true;
+  const ok = await issueVerificationOnBackend(report);
+  if (ok) updateReportPreview();
+  return ok;
 }
 
 function saveDraft() {
@@ -612,6 +713,7 @@ resetDictBtn.addEventListener("click", () => {
 });
 
 copyBtn.addEventListener("click", async () => {
+  await ensureBackendVerification();
   updateReportPreview();
   try {
     await navigator.clipboard.writeText(reportContent.textContent);
@@ -624,12 +726,14 @@ copyBtn.addEventListener("click", async () => {
   }
 });
 
-printBtn.addEventListener("click", () => {
+printBtn.addEventListener("click", async () => {
+  await ensureBackendVerification();
   updateReportPreview();
   window.print();
 });
 
-pdfBtn.addEventListener("click", () => {
+pdfBtn.addEventListener("click", async () => {
+  await ensureBackendVerification();
   updateReportPreview();
   window.print();
 });
@@ -686,7 +790,8 @@ if (saveDraftBtn) {
 }
 
 if (generateDocumentBtn && documentDialog) {
-  generateDocumentBtn.addEventListener("click", () => {
+  generateDocumentBtn.addEventListener("click", async () => {
+    await ensureBackendVerification();
     setActiveStep(3);
     updateReportPreview();
     documentDialog.showModal();

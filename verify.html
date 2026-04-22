@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Validação de Documento | Cuidar+</title>
+    <style>
+      :root {
+        --line: #d7e0ea;
+        --text: #16344a;
+        --muted: #5f7589;
+        --ok: #146c52;
+        --bad: #b42318;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #f3f7f9;
+        color: var(--text);
+      }
+      main {
+        width: min(860px, 94vw);
+        margin: 28px auto;
+        display: grid;
+        gap: 12px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 16px;
+      }
+      h1, h2 { margin: 0 0 10px; }
+      .row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+      }
+      input {
+        width: 100%;
+        border: 1px solid #c9d6e3;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font: inherit;
+      }
+      button {
+        border: 1px solid #0e8085;
+        background: linear-gradient(90deg, #0d7579, #129197);
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .muted { color: var(--muted); }
+      .ok { color: var(--ok); font-weight: 700; }
+      .bad { color: var(--bad); font-weight: 700; }
+      pre {
+        margin: 0;
+        background: #f9fbfd;
+        border: 1px solid #dfe6ee;
+        border-radius: 10px;
+        padding: 10px;
+        white-space: pre-wrap;
+      }
+      ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="card">
+        <h1>Validação de Documento Digital</h1>
+        <p class="muted">Informe o código de verificação para consultar autenticidade e integridade do documento.</p>
+        <div class="row">
+          <input id="code-input" type="text" placeholder="Ex.: CUIDAR-20260421-ABC123" />
+          <button id="check-btn" type="button">Validar</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Status</h2>
+        <p id="status" class="muted">Aguardando validação.</p>
+      </section>
+
+      <section class="card">
+        <h2>Detalhes</h2>
+        <pre id="details">Sem dados.</pre>
+      </section>
+
+      <section class="card">
+        <h2>Trilha de auditoria</h2>
+        <ul id="audit-list">
+          <li class="muted">Sem eventos.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script>
+      const codeInput = document.getElementById("code-input");
+      const checkBtn = document.getElementById("check-btn");
+      const statusEl = document.getElementById("status");
+      const detailsEl = document.getElementById("details");
+      const auditList = document.getElementById("audit-list");
+
+      async function loadAudit(code) {
+        try {
+          const res = await fetch(`/api/audit/${encodeURIComponent(code)}`);
+          const data = await res.json();
+          const audits = Array.isArray(data.audits) ? data.audits : [];
+          auditList.innerHTML = "";
+          if (!audits.length) {
+            auditList.innerHTML = "<li class='muted'>Sem eventos.</li>";
+            return;
+          }
+          audits.slice(0, 10).forEach((a) => {
+            const li = document.createElement("li");
+            li.textContent = `${new Date(a.ts).toLocaleString("pt-BR")} — ${a.action}`;
+            auditList.appendChild(li);
+          });
+        } catch {
+          auditList.innerHTML = "<li class='bad'>Falha ao carregar auditoria.</li>";
+        }
+      }
+
+      async function checkCode() {
+        const code = codeInput.value.trim();
+        if (!code) return;
+        statusEl.className = "muted";
+        statusEl.textContent = "Validando...";
+        detailsEl.textContent = "Carregando...";
+        auditList.innerHTML = "<li class='muted'>Carregando...</li>";
+
+        try {
+          const res = await fetch(`/api/verify/${encodeURIComponent(code)}`);
+          const data = await res.json();
+          if (!res.ok || !data.valid) {
+            statusEl.className = "bad";
+            statusEl.textContent = "Documento não localizado. Código inválido ou inexistente.";
+            detailsEl.textContent = JSON.stringify(data, null, 2);
+            await loadAudit(code);
+            return;
+          }
+
+          statusEl.className = "ok";
+          statusEl.textContent = "Documento autêntico e registrado no backend.";
+          detailsEl.textContent =
+`Código: ${data.code}
+Emitido em: ${new Date(data.issuedAt).toLocaleString("pt-BR")}
+Hash: ${data.contentHash}
+Médico: ${data.doctorName}
+CRM: ${data.doctorCrm}
+Paciente: ${data.patientName}
+CPF (mascarado): ${data.patientCpfMasked}
+
+Prévia:
+${data.preview}`;
+          await loadAudit(code);
+        } catch (err) {
+          statusEl.className = "bad";
+          statusEl.textContent = "Falha de comunicação com o servidor de validação.";
+          detailsEl.textContent = String(err);
+          auditList.innerHTML = "<li class='bad'>Falha ao carregar auditoria.</li>";
+        }
+      }
+
+      checkBtn.addEventListener("click", checkCode);
+      codeInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") checkCode();
+      });
+
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      if (code) {
+        codeInput.value = code;
+        checkCode();
+      }
+    </script>
+  </body>
+</html>
