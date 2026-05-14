@@ -62,6 +62,25 @@
                 <label>Idade (anos)<input id="age" type="number" min="0" max="120" required /></label>
                 <label>Peso (kg)<input id="weight" type="number" min="1" step="0.1" required /></label>
                 <label>Altura (m)<input id="height" type="number" min="0.5" max="2.5" step="0.01" required /></label>
+                <label>CEP de residência<input id="cep" type="text" inputmode="numeric" maxlength="9" placeholder="00000-000" /></label>
+                <label>Orientação sexual
+                  <select id="sexual-orientation">
+                    <option value="">Não informado</option>
+                    <option value="heterossexual">Heterossexual</option>
+                    <option value="homossexual">Homossexual</option>
+                    <option value="bissexual">Bissexual</option>
+                    <option value="assexual">Assexual</option>
+                    <option value="pansexual">Pansexual</option>
+                    <option value="outra">Outra</option>
+                  </select>
+                </label>
+                <label>Iniciou vida sexual?
+                  <select id="sexual-debut">
+                    <option value="">Não informado</option>
+                    <option value="sim">Sim</option>
+                    <option value="nao">Não</option>
+                  </select>
+                </label>
               </div>
               <fieldset>
                 <legend>Comorbidades e fatores de risco</legend>
@@ -74,6 +93,13 @@
                   <label><input class="comorbidity-input" type="checkbox" value="obesidade" /> Obesidade prévia/conhecida</label>
                 </div>
               </fieldset>
+              <fieldset>
+                <legend>Equidade e vulnerabilidade em saúde</legend>
+                <div class="checks">
+                  <label><input id="is-black" type="checkbox" value="sim" /> Pessoa negra (preta/parda)</label>
+                  <label><input id="is-pcd" type="checkbox" value="sim" /> Pessoa com deficiência (PCD)</label>
+                </div>
+              </fieldset>
               <div class="actions">
                 <button type="submit">Gerar recomendações</button>
               </div>
@@ -83,6 +109,7 @@
           <section class="card">
             <h2>Resumo preventivo</h2>
             <div id="imc-box" class="imc-box">Preencha os dados para calcular IMC.</div>
+            <div id="risk-box" class="imc-box">Risco cardiovascular e risco de AVC serão calculados após gerar recomendações.</div>
             <p class="hint">Marque apenas os exames/prevenções que serão solicitados neste atendimento.</p>
             <ul id="recommendations" class="list"></ul>
             <div class="extra-exam-tools">

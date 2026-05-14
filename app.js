@@ -29,6 +29,12 @@ const stepItems = [...document.querySelectorAll(".step[data-step]")];
 const step1Section = document.getElementById("step-1-section");
 const step2Section = document.getElementById("step-2-section");
 const step3Section = document.getElementById("final-report");
+const riskBox = document.getElementById("risk-box");
+const cepInput = document.getElementById("cep");
+const blackInput = document.getElementById("is-black");
+const pcdInput = document.getElementById("is-pcd");
+const sexualOrientationInput = document.getElementById("sexual-orientation");
+const sexualDebutInput = document.getElementById("sexual-debut");
 
 const BASE_CATALOG = [
   { system: "CID-11", code: "5A11", name: "Diabetes mellitus tipo 2" },
@@ -261,6 +267,126 @@ function formatNowPtBr() {
   }).format(now);
 }
 
+function sanitizeCep(value) {
+  return String(value || "").replace(/\D/g, "").slice(0, 8);
+}
+
+function formatCep(value) {
+  const digits = sanitizeCep(value);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+}
+
+function orientationLabel(value) {
+  const labels = {
+    heterossexual: "heterossexual",
+    homossexual: "homossexual",
+    bissexual: "bissexual",
+    assexual: "assexual",
+    pansexual: "pansexual",
+    outra: "outra"
+  };
+  return labels[value] || "não informada";
+}
+
+function sexualDebutLabel(value) {
+  if (value === "sim") return "sim";
+  if (value === "nao") return "não";
+  return "não informado";
+}
+
+function getAreaRiskFromCep(cepRaw) {
+  const digits = sanitizeCep(cepRaw);
+  const regionByPrefix = {
+    0: "Grande São Paulo",
+    1: "Interior de São Paulo",
+    2: "Rio de Janeiro e Espírito Santo",
+    3: "Minas Gerais",
+    4: "Bahia e Sergipe",
+    5: "PE/AL/PB/RN",
+    6: "CE/PI/MA/Norte",
+    7: "Centro-Oeste e TO/RO",
+    8: "Paraná e Santa Catarina",
+    9: "Rio Grande do Sul"
+  };
+  const pointsByPrefix = { 0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 2, 6: 2, 7: 1, 8: 0, 9: 0 };
+
+  if (digits.length !== 8) {
+    return {
+      points: 1,
+      description: "CEP não informado ou inválido (vulnerabilidade territorial não estratificada)."
+    };
+  }
+
+  const prefix = Number(digits[0]);
+  const region = regionByPrefix[prefix] || "região não classificada";
+  const points = Number.isFinite(pointsByPrefix[prefix]) ? pointsByPrefix[prefix] : 1;
+  return {
+    points,
+    description: `Área estimada por CEP (${formatCep(digits)} - ${region}).`
+  };
+}
+
+function classifyRisk(score, lowLimit, moderateLimit) {
+  if (score <= lowLimit) return "baixo";
+  if (score <= moderateLimit) return "moderado";
+  return "alto";
+}
+
+function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation }) {
+  const areaRisk = getAreaRiskFromCep(cep);
+  const isSexualMinority = sexualOrientation && sexualOrientation !== "heterossexual";
+
+  let cardioScore = 0;
+  if (age >= 60) cardioScore += 4;
+  else if (age >= 50) cardioScore += 3;
+  else if (age >= 40) cardioScore += 2;
+  else if (age >= 30) cardioScore += 1;
+  if (sex === "masculino") cardioScore += 1;
+  if (comorb.includes("has")) cardioScore += 3;
+  if (comorb.includes("dm2")) cardioScore += 3;
+  if (comorb.includes("tabagismo")) cardioScore += 2;
+  if (comorb.includes("dcv")) cardioScore += 2;
+  if (comorb.includes("drf")) cardioScore += 1;
+  if (imc >= 30) cardioScore += 2;
+  else if (imc >= 25) cardioScore += 1;
+  if (isBlack) cardioScore += 1;
+  if (isPcd) cardioScore += 1;
+  if (isSexualMinority) cardioScore += 1;
+  cardioScore += areaRisk.points;
+
+  let strokeScore = 0;
+  if (age >= 65) strokeScore += 4;
+  else if (age >= 55) strokeScore += 3;
+  else if (age >= 45) strokeScore += 2;
+  else if (age >= 35) strokeScore += 1;
+  if (comorb.includes("has")) strokeScore += 4;
+  if (comorb.includes("dm2")) strokeScore += 2;
+  if (comorb.includes("tabagismo")) strokeScore += 2;
+  if (comorb.includes("dcv")) strokeScore += 3;
+  if (imc >= 30) strokeScore += 1;
+  if (isBlack) strokeScore += 1;
+  if (isPcd) strokeScore += 1;
+  if (isSexualMinority) strokeScore += 1;
+  strokeScore += areaRisk.points;
+
+  const cardioLevel = classifyRisk(cardioScore, 4, 8);
+  const strokeLevel = classifyRisk(strokeScore, 4, 8);
+  const cardioEstimate = cardioLevel === "baixo" ? "<10%" : cardioLevel === "moderado" ? "10-19%" : ">=20%";
+  const strokeEstimate = strokeLevel === "baixo" ? "<5%" : strokeLevel === "moderado" ? "5-9%" : ">=10%";
+
+  return {
+    areaRisk,
+    cardio: { score: cardioScore, level: cardioLevel, estimate: cardioEstimate },
+    stroke: { score: strokeScore, level: strokeLevel, estimate: strokeEstimate }
+  };
+}
+
+function formatRiskBoxMessage(riskData) {
+  if (!riskData) return "Risco cardiovascular e risco de AVC serão calculados após gerar recomendações.";
+  return `Risco cardiovascular: ${riskData.cardio.level} (${riskData.cardio.estimate}) | Risco AVC: ${riskData.stroke.level} (${riskData.stroke.estimate})`;
+}
+
 function categorizeSelectedRecommendations(recommendations) {
   const categories = {
     "Exames de sangue": [],
@@ -272,6 +398,10 @@ function categorizeSelectedRecommendations(recommendations) {
 
   for (const text of recommendations) {
     const t = text.toLowerCase();
+
+    if (t.includes("sem indicação")) {
+      continue;
+    }
 
     if (t.includes("aferição de pressão arterial")) {
       categories["Avaliações clínicas"].push("Aferição de pressão arterial");
@@ -379,10 +509,40 @@ function buildReport() {
   const age = document.getElementById("age").value || "não informada";
   const weight = document.getElementById("weight").value || "não informado";
   const height = document.getElementById("height").value || "não informada";
+  const cep = cepInput?.value.trim() || "não informado";
+  const sexualOrientation = orientationLabel(sexualOrientationInput?.value);
+  const sexualDebut = sexualDebutLabel(sexualDebutInput?.value);
+  const isBlack = Boolean(blackInput?.checked);
+  const isPcd = Boolean(pcdInput?.checked);
   const notes = document.getElementById("notes").value.trim() || "sem observações adicionais";
   const checked = [...document.querySelectorAll(".comorbidity-input:checked")]
     .map((item) => item.parentElement.textContent.trim());
   const riskList = checked.length ? checked.join(", ") : "nenhuma marcada";
+  const comorbValues = getSelectedComorbidities();
+
+  const weightNumber = Number(document.getElementById("weight").value);
+  const heightNumber = Number(document.getElementById("height").value);
+  const ageNumber = Number(document.getElementById("age").value);
+  const imcValue = calcImc(weightNumber, heightNumber);
+  const riskData = !Number.isNaN(ageNumber) && Number.isFinite(imcValue)
+    ? calcCardioAndStrokeRisk({
+      sex,
+      age: ageNumber,
+      imc: imcValue,
+      comorb: comorbValues,
+      cep,
+      isBlack,
+      isPcd,
+      sexualOrientation: sexualOrientationInput?.value
+    })
+    : null;
+  const equityFactors = [];
+  if (isBlack) equityFactors.push("pessoa negra (preta/parda)");
+  if (isPcd) equityFactors.push("pessoa com deficiência (PCD)");
+  if (sexualOrientationInput?.value && sexualOrientationInput.value !== "heterossexual") {
+    equityFactors.push(`orientação sexual: ${sexualOrientation}`);
+  }
+  const equitySummary = equityFactors.length ? equityFactors.join(", ") : "nenhum fator de equidade adicional marcado";
 
   const currentCls = classificationInput.value.trim();
   const found = findClassificationMatch(currentCls);
@@ -401,9 +561,14 @@ function buildReport() {
     "",
     `Sexo: ${sex}   Idade: ${age}`,
     `Peso: ${weight} kg   Altura: ${height} m`,
+    `CEP de residência: ${cep}`,
+    `Orientação sexual: ${sexualOrientation}   Iniciou vida sexual: ${sexualDebut}`,
     `${imcText}`,
+    `${riskData ? `Risco cardiovascular: ${riskData.cardio.level} (${riskData.cardio.estimate}) | Risco AVC: ${riskData.stroke.level} (${riskData.stroke.estimate})` : "Risco cardiovascular/AVC: não calculado"}`,
     "",
     `Comorbidades/fatores: ${riskList}`,
+    `Fatores de equidade e acesso: ${equitySummary}`,
+    `${riskData ? `Área (CEP) considerada no risco: ${riskData.areaRisk.description}` : "Área (CEP) considerada no risco: não foi possível estimar"}`,
     "",
     `Classificação de referência (CID-11/APS): ${clsText}`,
     "",
@@ -421,7 +586,31 @@ function buildReport() {
   ].join("\n");
 }
 
+function calculateCurrentRiskData() {
+  const sex = document.getElementById("sex").value;
+  const age = Number(document.getElementById("age").value);
+  const weight = Number(document.getElementById("weight").value);
+  const height = Number(document.getElementById("height").value);
+  const imc = calcImc(weight, height);
+  if (!sex || !age || !Number.isFinite(imc)) return null;
+
+  return calcCardioAndStrokeRisk({
+    sex,
+    age,
+    imc,
+    comorb: getSelectedComorbidities(),
+    cep: cepInput?.value || "",
+    isBlack: Boolean(blackInput?.checked),
+    isPcd: Boolean(pcdInput?.checked),
+    sexualOrientation: sexualOrientationInput?.value || ""
+  });
+}
+
 function updateReportPreview() {
+  if (riskBox) {
+    const riskData = calculateCurrentRiskData();
+    riskBox.textContent = formatRiskBoxMessage(riskData);
+  }
   reportContent.textContent = buildReport();
 }
 
@@ -434,6 +623,7 @@ function clearCurrentFormData() {
   extraExamsList.innerHTML = "";
   if (extraExamInput) extraExamInput.value = "";
   imcBox.textContent = "Preencha os dados para calcular IMC.";
+  if (riskBox) riskBox.textContent = "Risco cardiovascular e risco de AVC serão calculados após gerar recomendações.";
   updateReportPreview();
   setActiveStep(1);
 }
@@ -457,7 +647,7 @@ function imcClass(imc) {
   return "obesidade grau III";
 }
 
-function recommendationEngine({ sex, age, imc, comorb }) {
+function recommendationEngine({ sex, age, imc, comorb, sexualDebut }) {
   const out = [];
   const hasRiskDM = comorb.includes("has") || comorb.includes("obesidade") || comorb.includes("drf");
   const hasCVRisk = comorb.includes("has") || comorb.includes("dm2") || comorb.includes("tabagismo") || comorb.includes("dcv");
@@ -472,14 +662,23 @@ function recommendationEngine({ sex, age, imc, comorb }) {
   if (hasCVRisk || age >= 40) {
     out.push("Perfil lipídico e estratificação de risco cardiovascular global para prevenção primária.");
   }
+  if (hasCVRisk || age >= 35) {
+    out.push("Estratificar risco de AVC e risco cardiovascular (estimativa de 10 anos) e revisar metas terapêuticas.");
+  }
   if (comorb.includes("dm2") || comorb.includes("has")) {
     out.push("Função renal (creatinina/eTFG) e albuminúria para vigilância de doença renal crônica.");
   }
   if (sex === "feminino" && age >= 50 && age <= 69) {
     out.push("Rastreamento de câncer de mama: mamografia bilateral a cada 2 anos.");
   }
-  if (sex === "feminino" && age >= 25 && age <= 64) {
+  if (sex === "feminino" && age >= 25 && age <= 64 && sexualDebut === "sim") {
     out.push("Rastreamento de câncer do colo do útero conforme diretriz vigente do MS (modelo organizado com teste de HPV quando disponível na rede).");
+  }
+  if (sex === "feminino" && age >= 25 && age <= 64 && sexualDebut === "") {
+    out.push("Confirmar início da vida sexual para definir o melhor protocolo de rastreamento do colo do útero.");
+  }
+  if (sex === "feminino" && age >= 25 && age <= 64 && sexualDebut === "nao") {
+    out.push("No momento, sem indicação de rastreamento de colo do útero (paciente informa não ter iniciado vida sexual).");
   }
   if (age >= 25) {
     out.push("Verificar situação vacinal (hepatite B, dT e outras do calendário do adulto/idoso).");
@@ -520,18 +719,26 @@ form.addEventListener("submit", (event) => {
   const age = Number(document.getElementById("age").value);
   const weight = Number(document.getElementById("weight").value);
   const height = Number(document.getElementById("height").value);
+  const cep = cepInput?.value || "";
+  const isBlack = Boolean(blackInput?.checked);
+  const isPcd = Boolean(pcdInput?.checked);
+  const sexualOrientation = sexualOrientationInput?.value || "";
+  const sexualDebut = sexualDebutInput?.value || "";
   const comorb = getSelectedComorbidities();
 
   const imc = calcImc(weight, height);
   if (!imc || Number.isNaN(imc)) {
     imcBox.textContent = "Não foi possível calcular IMC.";
+    if (riskBox) riskBox.textContent = "Risco cardiovascular e risco de AVC não calculados (preencha peso e altura válidos).";
     recList.innerHTML = "";
     updateReportPreview();
     return;
   }
 
   imcBox.textContent = `IMC: ${imc.toFixed(1)} kg/m² (${imcClass(imc)}).`;
-  renderRecommendations(recommendationEngine({ sex, age, imc, comorb }));
+  const riskData = calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation });
+  if (riskBox) riskBox.textContent = formatRiskBoxMessage(riskData);
+  renderRecommendations(recommendationEngine({ sex, age, imc, comorb, sexualDebut }));
   updateReportPreview();
 });
 
@@ -637,6 +844,15 @@ document.getElementById("sex").addEventListener("change", updateReportPreview);
 document.getElementById("age").addEventListener("input", updateReportPreview);
 document.getElementById("weight").addEventListener("input", updateReportPreview);
 document.getElementById("height").addEventListener("input", updateReportPreview);
+[blackInput, pcdInput, sexualOrientationInput, sexualDebutInput].forEach((field) => {
+  if (field) field.addEventListener("change", updateReportPreview);
+});
+if (cepInput) {
+  cepInput.addEventListener("input", () => {
+    cepInput.value = formatCep(cepInput.value);
+    updateReportPreview();
+  });
+}
 [...document.querySelectorAll(".comorbidity-input")].forEach((cb) => cb.addEventListener("change", updateReportPreview));
 recList.addEventListener("change", (event) => {
   if (event.target.classList.contains("rec-check")) updateReportPreview();
