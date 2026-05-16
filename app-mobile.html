@@ -170,9 +170,15 @@
               de vulnerabilidade, busca ativa e cuidado longitudinal na APS.
             </p>
             <p>
-              O CEP localiza uma faixa territorial estadual. O banco local relaciona essa faixa ao IDHM 2021 da UF, publicado
-              pelo PNUD/Atlas Brasil com dados da PNAD Contínua do IBGE. O índice socioeconômico é IDHM x 100: muito alto soma
-              0 ponto; alto soma 1; médio soma 2; baixo soma 3.
+              O CEP é cruzado com a base oficial “Logradouros por face de quadra”, da Prefeitura do Recife. Para cada CEP, o app
+              agrega as faces de quadra encontradas e calcula um índice socioeconômico-territorial de 0 a 100 com pesos para
+              esgoto, água, pavimentação, coleta de lixo, iluminação e limpeza urbana. Se o CEP exato não aparecer, usa a média
+              do prefixo postal de 5 dígitos quando houver CEPs oficiais relacionados. O CEP genérico 50000-000 foi excluído por
+              aparecer na fonte como valor amplo em múltiplos bairros.
+            </p>
+            <p>
+              A pontuação territorial foi recalibrada para a base municipal: índice ≥85 soma 0 ponto; 70-84 soma 1 ponto; 55-69
+              soma 2 pontos; abaixo de 55 soma 3 pontos. CEP inválido ou fora da base oficial do Recife não soma ponto.
             </p>
             <p>
               Pessoa negra, PCD, orientação sexual preenchida como não heterossexual e identidade de gênero trans, travesti,
@@ -180,11 +186,11 @@
               Orientação sexual é opcional e só influencia quando informada.
             </p>
             <p class="muted">
-              Limitação: é uma aproximação ecológica. O CEP não mede renda individual, bairro exato ou exposição real. O ideal é
-              substituir por dados locais da UBS, setor censitário, IVS municipal/UDH ou cadastro territorial validado.
+              Limitação: é uma aproximação ecológica por infraestrutura urbana. O CEP não mede renda individual nem exposição real.
+              O índice deve ser lido como alerta de vulnerabilidade e barreira de acesso.
             </p>
             <ul class="methodology-list">
-              <li><a href="https://www.undp.org/pt/brazil/desenvolvimento-humano/painel-idhm" target="_blank" rel="noreferrer">PNUD/Atlas Brasil – Painel IDHM 2021</a></li>
+              <li><a href="https://dados.recife.pe.gov.br/dataset/area-urbana/resource/b4124768-953e-4080-870e-a655a755f40a" target="_blank" rel="noreferrer">Prefeitura do Recife – Logradouros por face de quadra</a></li>
               <li><a href="https://www.ipea.gov.br/portal/categoria-projetos-e-estatisticas/9939-atlas-da-vulnerabilidade-social" target="_blank" rel="noreferrer">IPEA – Atlas da Vulnerabilidade Social</a></li>
               <li><a href="https://www.who.int/en/news-room/fact-sheets/detail/cardiovascular-diseases-%28cvds%29" target="_blank" rel="noreferrer">OMS – Fatores cardiovasculares</a></li>
               <li><a href="https://professional.heart.org/en/science-news/assessing-and-addressing-cardiovascular-health-in-lgbtq-adults" target="_blank" rel="noreferrer">AHA – Saúde cardiovascular LGBTQ</a></li>

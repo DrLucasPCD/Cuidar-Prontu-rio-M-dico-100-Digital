@@ -39,6 +39,12 @@ const sexualDebutInput = document.getElementById("sexual-debut");
 const cepSocioDb = window.CEP_SOCIO_DB && Array.isArray(window.CEP_SOCIO_DB.entries)
   ? window.CEP_SOCIO_DB.entries
   : [];
+const cepSocioByCep = new Map(
+  cepSocioDb
+    .filter((entry) => entry.cep)
+    .map((entry) => [String(entry.cep).replace(/\D/g, ""), entry])
+);
+const cepSocioByPrefix5 = buildCepPrefixIndex(cepSocioDb);
 
 const BASE_CATALOG = [
   { system: "CID-11", code: "5A11", name: "Diabetes mellitus tipo 2" },
@@ -312,55 +318,102 @@ function sexualDebutLabel(value) {
   return "não informado";
 }
 
+function classifyTerritorialIndex(index) {
+  if (index >= 85) return { points: 0, category: "baixa vulnerabilidade territorial" };
+  if (index >= 70) return { points: 1, category: "vulnerabilidade territorial moderada-baixa" };
+  if (index >= 55) return { points: 2, category: "vulnerabilidade territorial moderada-alta" };
+  return { points: 3, category: "alta vulnerabilidade territorial" };
+}
+
+function buildCepPrefixIndex(entries) {
+  const groups = new Map();
+  for (const entry of entries) {
+    const cep = String(entry.cep || "").replace(/\D/g, "");
+    if (cep.length !== 8) continue;
+    const prefix = cep.slice(0, 5);
+    const group = groups.get(prefix) || {
+      prefix,
+      count: 0,
+      faces: 0,
+      indexSum: 0,
+      bairros: new Map()
+    };
+    group.count += 1;
+    group.faces += Number(entry.faces || 0);
+    group.indexSum += Number(entry.indiceSocioeconomico || 0);
+    group.bairros.set(entry.bairro, (group.bairros.get(entry.bairro) || 0) + 1);
+    groups.set(prefix, group);
+  }
+
+  const index = new Map();
+  for (const group of groups.values()) {
+    const indiceSocioeconomico = Math.round(group.indexSum / group.count);
+    const classification = classifyTerritorialIndex(indiceSocioeconomico);
+    const bairros = [...group.bairros.entries()].sort((a, b) => b[1] - a[1]);
+    index.set(group.prefix, {
+      cepPrefix: group.prefix,
+      bairro: bairros[0]?.[0] || "Recife",
+      faces: group.faces,
+      relatedCeps: group.count,
+      indiceSocioeconomico,
+      privacaoTerritorial: 100 - indiceSocioeconomico,
+      category: classification.category,
+      points: classification.points,
+      approximate: true
+    });
+  }
+  return index;
+}
+
 function getSocioeconomicByCep(cepRaw) {
   const digits = sanitizeCep(cepRaw);
   if (digits.length !== 8) {
     return {
       found: false,
       indiceSocioeconomico: null,
-      points: 1,
-      description: "CEP não informado ou inválido (índice socioeconômico regional não estimado)."
+      points: 0,
+      description: "CEP não informado ou inválido (sem ajuste territorial no risco)."
+    };
+  }
+  if (digits === "50000000") {
+    return {
+      found: false,
+      indiceSocioeconomico: null,
+      points: 0,
+      description: "CEP 50000-000 é genérico na base oficial do Recife e foi excluído do ajuste territorial."
     };
   }
 
-  const cepNumber = Number(digits);
-  const match = cepSocioDb.find((entry) => {
-    const start = Number(String(entry.start || "").replace(/\D/g, ""));
-    const end = Number(String(entry.end || "").replace(/\D/g, ""));
-    if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
-    return cepNumber >= start && cepNumber <= end;
-  });
+  const exactMatch = cepSocioByCep.get(digits);
+  const prefixMatch = cepSocioByPrefix5.get(digits.slice(0, 5));
+  const match = exactMatch || prefixMatch;
 
   if (!match) {
     return {
       found: false,
       indiceSocioeconomico: null,
-      points: 1,
-      description: `CEP ${formatCep(digits)} sem correspondência no banco socioeconômico local.`
+      points: 0,
+      description: `CEP ${formatCep(digits)} sem correspondência na base oficial de logradouros do Recife (sem ajuste territorial).`
     };
   }
 
   const index = Number(match.indiceSocioeconomico);
-  let points = 3;
-  let category = "baixo";
-  if (index >= 80) {
-    points = 0;
-    category = "muito alto";
-  } else if (index >= 70) {
-    points = 1;
-    category = "alto";
-  } else if (index >= 60) {
-    points = 2;
-    category = "médio";
-  }
+  const classification = Number.isFinite(Number(match.points))
+    ? { points: Number(match.points), category: match.category }
+    : classifyTerritorialIndex(index);
+  const location = exactMatch
+    ? `CEP ${formatCep(digits)} - ${match.bairro}, Recife/PE`
+    : `CEP ${formatCep(digits)} aproximado pelo prefixo ${match.cepPrefix} (${match.relatedCeps} CEPs oficiais relacionados) - ${match.bairro}, Recife/PE`;
 
   return {
     found: true,
     indiceSocioeconomico: index,
-    idhm2021: match.idhm2021,
-    category,
-    points,
-    description: `CEP ${formatCep(digits)} - ${match.uf} (${match.label}), IDHM 2021: ${match.idhm2021}, índice socioeconômico regional: ${index}/100 (${category}).`
+    privacaoTerritorial: match.privacaoTerritorial,
+    category: classification.category,
+    points: classification.points,
+    components: match.components || null,
+    source: window.CEP_SOCIO_DB?.source || "Base oficial local",
+    description: `${location}, índice socioeconômico-territorial: ${index}/100 (${classification.category}).`
   };
 }
 

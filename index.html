@@ -190,11 +190,17 @@
                 para sinalizar maior vulnerabilidade, necessidade de busca ativa e cuidado longitudinal na APS.
               </p>
               <p>
-                O CEP é usado apenas para localizar uma faixa territorial estadual. O banco local relaciona essa faixa com o IDHM
-                2021 da UF, publicado pelo PNUD/Atlas Brasil a partir da PNAD Contínua do IBGE. O índice socioeconômico usado no
-                app é IDHM x 100: IDHM muito alto (0,800-1,000) soma 0 ponto; alto (0,700-0,799) soma 1 ponto; médio
-                (0,600-0,699) soma 2 pontos; baixo soma 3 pontos. Esse acréscimo entra tanto no risco cardiovascular quanto no
-                risco de AVC.
+                O CEP é cruzado com a base oficial “Logradouros por face de quadra”, do Portal de Dados Abertos da Prefeitura do
+                Recife. Para cada CEP, o app agrega as faces de quadra encontradas e calcula um índice socioeconômico-territorial
+                de 0 a 100 com estes pesos: esgoto (30%), água (20%), pavimentação (15%), coleta de lixo (15%), iluminação
+                (10%) e limpeza urbana (10%). Quando o CEP exato não aparece na base, o app usa a média do prefixo postal de 5
+                dígitos, se houver CEPs oficiais relacionados. O CEP genérico 50000-000 foi excluído por aparecer na fonte como
+                valor amplo em múltiplos bairros.
+              </p>
+              <p>
+                A pontuação territorial foi recalibrada para a base municipal: índice ≥85 soma 0 ponto; 70-84 soma 1 ponto;
+                55-69 soma 2 pontos; abaixo de 55 soma 3 pontos. Esse acréscimo entra tanto no risco cardiovascular quanto no
+                risco de AVC. CEP inválido ou fora da base oficial do Recife não soma ponto territorial.
               </p>
               <p>
                 Pessoa negra, PCD, orientação sexual preenchida como não heterossexual e identidade de gênero trans, travesti,
@@ -202,12 +208,12 @@
                 causas biológicas diretas. A orientação sexual é opcional e só influencia a conta quando informada.
               </p>
               <p class="muted">
-                Limitação científica: esta é uma aproximação ecológica. O CEP não mede renda individual, bairro exato ou
-                exposição real do paciente. Para uso assistencial mais robusto, o ideal é substituir a base estadual por dados
-                locais de território da UBS, setor censitário, IVS municipal/UDH ou cadastro territorial validado pela gestão.
+                Limitação científica: esta é uma aproximação ecológica por infraestrutura urbana. O CEP não mede renda individual
+                nem exposição real do paciente. O índice melhora a leitura territorial para Recife, mas deve ser interpretado como
+                alerta de vulnerabilidade e barreira de acesso, não como causalidade biológica.
               </p>
               <ul class="methodology-list">
-                <li><a href="https://www.undp.org/pt/brazil/desenvolvimento-humano/painel-idhm" target="_blank" rel="noreferrer">PNUD/Atlas Brasil – Painel IDHM 2021</a></li>
+                <li><a href="https://dados.recife.pe.gov.br/dataset/area-urbana/resource/b4124768-953e-4080-870e-a655a755f40a" target="_blank" rel="noreferrer">Prefeitura do Recife – Logradouros por face de quadra</a></li>
                 <li><a href="https://www.ipea.gov.br/portal/categoria-projetos-e-estatisticas/9939-atlas-da-vulnerabilidade-social" target="_blank" rel="noreferrer">IPEA – Atlas da Vulnerabilidade Social</a></li>
                 <li><a href="https://www.who.int/en/news-room/fact-sheets/detail/cardiovascular-diseases-%28cvds%29" target="_blank" rel="noreferrer">OMS – Fatores de risco e determinantes cardiovasculares</a></li>
                 <li><a href="https://professional.heart.org/en/science-news/assessing-and-addressing-cardiovascular-health-in-lgbtq-adults" target="_blank" rel="noreferrer">American Heart Association – Saúde cardiovascular em adultos LGBTQ</a></li>
