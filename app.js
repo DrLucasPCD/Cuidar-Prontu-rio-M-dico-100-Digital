@@ -1,5 +1,6 @@
 const form = document.getElementById("clinical-form");
 const imcBox = document.getElementById("imc-box");
+const castelliBox = document.getElementById("castelli-box");
 const recList = document.getElementById("recommendations");
 const extraExamInput = document.getElementById("extra-exam-input");
 const addExtraExamBtn = document.getElementById("add-extra-exam-btn");
@@ -31,6 +32,10 @@ const step2Section = document.getElementById("step-2-section");
 const step3Section = document.getElementById("final-report");
 const riskBox = document.getElementById("risk-box");
 const cepInput = document.getElementById("cep");
+const physicalActivityInput = document.getElementById("physical-activity");
+const totalCholesterolInput = document.getElementById("total-cholesterol");
+const hdlCholesterolInput = document.getElementById("hdl-cholesterol");
+const ldlCholesterolInput = document.getElementById("ldl-cholesterol");
 const blackInput = document.getElementById("is-black");
 const pcdInput = document.getElementById("is-pcd");
 const sexualOrientationInput = document.getElementById("sexual-orientation");
@@ -318,6 +323,81 @@ function sexualDebutLabel(value) {
   return "não informado";
 }
 
+function physicalActivityLabel(value) {
+  const labels = {
+    regular: "regular (≥150 min/semana)",
+    insuficiente: "insuficiente (<150 min/semana)",
+    sedentario: "sedentário/inativo"
+  };
+  return labels[value] || "não informada";
+}
+
+function physicalActivityRiskPoints(value) {
+  if (value === "regular") return -1;
+  if (value === "insuficiente") return 1;
+  if (value === "sedentario") return 2;
+  return 0;
+}
+
+function getNumberFromInput(input) {
+  const value = Number(input?.value);
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function classifyCastelliOne(value) {
+  if (value < 3.5) return { level: "favorável", points: 0 };
+  if (value <= 5) return { level: "intermediário", points: 1 };
+  return { level: "alto", points: 2 };
+}
+
+function classifyCastelliTwo(value) {
+  if (value < 2.5) return { level: "favorável", points: 0 };
+  if (value <= 3.5) return { level: "intermediário", points: 1 };
+  return { level: "alto", points: 2 };
+}
+
+function calcCastelliIndices() {
+  const total = getNumberFromInput(totalCholesterolInput);
+  const hdl = getNumberFromInput(hdlCholesterolInput);
+  const ldl = getNumberFromInput(ldlCholesterolInput);
+  if (!total || !hdl || !ldl) {
+    return {
+      complete: false,
+      total,
+      hdl,
+      ldl,
+      cardioPoints: 0,
+      strokePoints: 0,
+      summary: "Índices de Castelli serão calculados com colesterol total, HDL e LDL."
+    };
+  }
+
+  const castelli1 = total / hdl;
+  const castelli2 = ldl / hdl;
+  const castelli1Class = classifyCastelliOne(castelli1);
+  const castelli2Class = classifyCastelliTwo(castelli2);
+  const lipidPoints = Math.min(3, castelli1Class.points + castelli2Class.points);
+
+  return {
+    complete: true,
+    total,
+    hdl,
+    ldl,
+    castelli1,
+    castelli2,
+    castelli1Class,
+    castelli2Class,
+    cardioPoints: lipidPoints,
+    strokePoints: Math.min(2, lipidPoints),
+    summary: `Castelli I: ${castelli1.toFixed(2)} (${castelli1Class.level}) | Castelli II: ${castelli2.toFixed(2)} (${castelli2Class.level})`
+  };
+}
+
+function formatLipidReportLine(castelliData) {
+  if (!castelliData.complete) return "Colesterol total/HDL/LDL: não informado ou incompleto";
+  return `Colesterol total: ${castelliData.total} mg/dL | HDL: ${castelliData.hdl} mg/dL | LDL: ${castelliData.ldl} mg/dL`;
+}
+
 function classifyTerritorialIndex(index) {
   if (index >= 85) return { points: 0, category: "baixa vulnerabilidade territorial" };
   if (index >= 70) return { points: 1, category: "vulnerabilidade territorial moderada-baixa" };
@@ -423,10 +503,12 @@ function classifyRisk(score, lowLimit, moderateLimit) {
   return "alto";
 }
 
-function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation, genderIdentity }) {
+function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation, genderIdentity, physicalActivity, castelliData }) {
   const socioeconomicData = getSocioeconomicByCep(cep);
   const isSexualMinority = sexualOrientation && sexualOrientation !== "heterossexual";
   const hasGenderMinorityVulnerability = ["mulher_trans", "homem_trans", "travesti", "nao_binaria", "outra"].includes(genderIdentity);
+  const activityPoints = physicalActivityRiskPoints(physicalActivity);
+  const lipidData = castelliData || calcCastelliIndices();
 
   let cardioScore = 0;
   if (age >= 60) cardioScore += 4;
@@ -446,6 +528,8 @@ function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, s
   if (isSexualMinority) cardioScore += 1;
   if (hasGenderMinorityVulnerability) cardioScore += 1;
   cardioScore += socioeconomicData.points;
+  cardioScore += activityPoints;
+  cardioScore += lipidData.cardioPoints;
 
   let strokeScore = 0;
   if (age >= 65) strokeScore += 4;
@@ -462,6 +546,10 @@ function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, s
   if (isSexualMinority) strokeScore += 1;
   if (hasGenderMinorityVulnerability) strokeScore += 1;
   strokeScore += socioeconomicData.points;
+  strokeScore += activityPoints;
+  strokeScore += lipidData.strokePoints;
+  cardioScore = Math.max(0, cardioScore);
+  strokeScore = Math.max(0, strokeScore);
 
   const cardioLevel = classifyRisk(cardioScore, 4, 8);
   const strokeLevel = classifyRisk(strokeScore, 4, 8);
@@ -606,9 +694,11 @@ function buildReport() {
   const weight = document.getElementById("weight").value || "não informado";
   const height = document.getElementById("height").value || "não informada";
   const cep = cepInput?.value.trim() || "não informado";
+  const physicalActivity = physicalActivityLabel(physicalActivityInput?.value);
   const sexualOrientation = orientationLabel(sexualOrientationInput?.value);
   const genderIdentity = genderIdentityLabel(genderIdentityInput?.value);
   const sexualDebut = sexualDebutLabel(sexualDebutInput?.value);
+  const castelliData = calcCastelliIndices();
   const isBlack = Boolean(blackInput?.checked);
   const isPcd = Boolean(pcdInput?.checked);
   const notes = document.getElementById("notes").value.trim() || "sem observações adicionais";
@@ -631,7 +721,9 @@ function buildReport() {
       isBlack,
       isPcd,
       sexualOrientation: sexualOrientationInput?.value,
-      genderIdentity: genderIdentityInput?.value
+      genderIdentity: genderIdentityInput?.value,
+      physicalActivity: physicalActivityInput?.value,
+      castelliData
     })
     : null;
   const equityFactors = [];
@@ -662,10 +754,13 @@ function buildReport() {
     "",
     `Sexo: ${sex}   Idade: ${age}`,
     `Peso: ${weight} kg   Altura: ${height} m`,
+    `Atividade física: ${physicalActivity}`,
     `CEP de residência: ${cep}`,
     `Orientação sexual: ${sexualOrientation}   Identidade de gênero: ${genderIdentity}`,
     `Iniciou vida sexual: ${sexualDebut}`,
     `${imcText}`,
+    `${formatLipidReportLine(castelliData)}`,
+    `${castelliData.summary}`,
     `${riskData ? `Risco cardiovascular: ${riskData.cardio.level} (${riskData.cardio.estimate}) | Risco AVC: ${riskData.stroke.level} (${riskData.stroke.estimate})` : "Risco cardiovascular/AVC: não calculado"}`,
     "",
     `Comorbidades/fatores: ${riskList}`,
@@ -705,11 +800,14 @@ function calculateCurrentRiskData() {
     isBlack: Boolean(blackInput?.checked),
     isPcd: Boolean(pcdInput?.checked),
     sexualOrientation: sexualOrientationInput?.value || "",
-    genderIdentity: genderIdentityInput?.value || ""
+    genderIdentity: genderIdentityInput?.value || "",
+    physicalActivity: physicalActivityInput?.value || "",
+    castelliData: calcCastelliIndices()
   });
 }
 
 function updateReportPreview() {
+  if (castelliBox) castelliBox.textContent = calcCastelliIndices().summary;
   if (riskBox) {
     const riskData = calculateCurrentRiskData();
     riskBox.textContent = formatRiskBoxMessage(riskData);
@@ -727,6 +825,7 @@ function clearCurrentFormData() {
   if (extraExamInput) extraExamInput.value = "";
   imcBox.textContent = "Preencha os dados para calcular IMC.";
   if (riskBox) riskBox.textContent = "Risco cardiovascular e risco de AVC serão calculados após gerar recomendações.";
+  if (castelliBox) castelliBox.textContent = "Índices de Castelli serão calculados com colesterol total, HDL e LDL.";
   updateReportPreview();
   setActiveStep(1);
 }
@@ -750,7 +849,7 @@ function imcClass(imc) {
   return "obesidade grau III";
 }
 
-function recommendationEngine({ sex, age, imc, comorb, sexualDebut }) {
+function recommendationEngine({ sex, age, imc, comorb, sexualDebut, physicalActivity, castelliData }) {
   const out = [];
   const hasRiskDM = comorb.includes("has") || comorb.includes("obesidade") || comorb.includes("drf");
   const hasCVRisk = comorb.includes("has") || comorb.includes("dm2") || comorb.includes("tabagismo") || comorb.includes("dcv");
@@ -765,8 +864,14 @@ function recommendationEngine({ sex, age, imc, comorb, sexualDebut }) {
   if (hasCVRisk || age >= 40) {
     out.push("Perfil lipídico e estratificação de risco cardiovascular global para prevenção primária.");
   }
+  if (castelliData?.complete && (castelliData.cardioPoints > 0 || castelliData.strokePoints > 0)) {
+    out.push("Reavaliar perfil lipídico e metas de prevenção cardiovascular devido a índices de Castelli intermediários/altos.");
+  }
   if (hasCVRisk || age >= 35) {
     out.push("Estratificar risco de AVC e risco cardiovascular (estimativa de 10 anos) e revisar metas terapêuticas.");
+  }
+  if (physicalActivity === "insuficiente" || physicalActivity === "sedentario") {
+    out.push("Aconselhamento breve para atividade física e plano progressivo conforme capacidade funcional e segurança clínica.");
   }
   if (comorb.includes("dm2") || comorb.includes("has")) {
     out.push("Função renal (creatinina/eTFG) e albuminúria para vigilância de doença renal crônica.");
@@ -823,11 +928,13 @@ form.addEventListener("submit", (event) => {
   const weight = Number(document.getElementById("weight").value);
   const height = Number(document.getElementById("height").value);
   const cep = cepInput?.value || "";
+  const physicalActivity = physicalActivityInput?.value || "";
   const isBlack = Boolean(blackInput?.checked);
   const isPcd = Boolean(pcdInput?.checked);
   const sexualOrientation = sexualOrientationInput?.value || "";
   const genderIdentity = genderIdentityInput?.value || "";
   const sexualDebut = sexualDebutInput?.value || "";
+  const castelliData = calcCastelliIndices();
   const comorb = getSelectedComorbidities();
 
   const imc = calcImc(weight, height);
@@ -840,9 +947,10 @@ form.addEventListener("submit", (event) => {
   }
 
   imcBox.textContent = `IMC: ${imc.toFixed(1)} kg/m² (${imcClass(imc)}).`;
-  const riskData = calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation, genderIdentity });
+  if (castelliBox) castelliBox.textContent = castelliData.summary;
+  const riskData = calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation, genderIdentity, physicalActivity, castelliData });
   if (riskBox) riskBox.textContent = formatRiskBoxMessage(riskData);
-  renderRecommendations(recommendationEngine({ sex, age, imc, comorb, sexualDebut }));
+  renderRecommendations(recommendationEngine({ sex, age, imc, comorb, sexualDebut, physicalActivity, castelliData }));
   updateReportPreview();
 });
 
@@ -948,6 +1056,10 @@ document.getElementById("sex").addEventListener("change", updateReportPreview);
 document.getElementById("age").addEventListener("input", updateReportPreview);
 document.getElementById("weight").addEventListener("input", updateReportPreview);
 document.getElementById("height").addEventListener("input", updateReportPreview);
+if (physicalActivityInput) physicalActivityInput.addEventListener("change", updateReportPreview);
+[totalCholesterolInput, hdlCholesterolInput, ldlCholesterolInput].forEach((field) => {
+  if (field) field.addEventListener("input", updateReportPreview);
+});
 [blackInput, pcdInput, sexualOrientationInput, genderIdentityInput, sexualDebutInput].forEach((field) => {
   if (field) field.addEventListener("change", updateReportPreview);
 });

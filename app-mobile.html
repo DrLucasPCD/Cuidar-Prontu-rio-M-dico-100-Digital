@@ -62,7 +62,18 @@
                 <label>Idade (anos)<input id="age" type="number" min="0" max="120" required /></label>
                 <label>Peso (kg)<input id="weight" type="number" min="1" step="0.1" required /></label>
                 <label>Altura (m)<input id="height" type="number" min="0.5" max="2.5" step="0.01" required /></label>
+                <label>Atividade física
+                  <select id="physical-activity">
+                    <option value="">Não informado</option>
+                    <option value="regular">Regular (≥150 min/semana)</option>
+                    <option value="insuficiente">Insuficiente (&lt;150 min/semana)</option>
+                    <option value="sedentario">Sedentário/inativo</option>
+                  </select>
+                </label>
                 <label>CEP de residência<input id="cep" type="text" inputmode="numeric" maxlength="9" placeholder="00000-000" /></label>
+                <label>Colesterol total (mg/dL)<input id="total-cholesterol" type="number" min="1" max="1000" step="1" /></label>
+                <label>HDL (mg/dL)<input id="hdl-cholesterol" type="number" min="1" max="300" step="1" /></label>
+                <label>LDL (mg/dL)<input id="ldl-cholesterol" type="number" min="1" max="600" step="1" /></label>
                 <label>Orientação sexual (opcional)
                   <select id="sexual-orientation">
                     <option value="">Não informado</option>
@@ -122,6 +133,7 @@
             <h2>Resumo preventivo</h2>
             <div id="imc-box" class="imc-box">Preencha os dados para calcular IMC.</div>
             <div id="risk-box" class="imc-box">Risco cardiovascular e risco de AVC serão calculados após gerar recomendações.</div>
+            <div id="castelli-box" class="imc-box">Índices de Castelli serão calculados com colesterol total, HDL e LDL.</div>
             <p class="hint">Marque apenas os exames/prevenções que serão solicitados neste atendimento.</p>
             <ul id="recommendations" class="list"></ul>
             <div class="extra-exam-tools">
@@ -181,6 +193,11 @@
               soma 2 pontos; abaixo de 55 soma 3 pontos. CEP inválido ou fora da base oficial do Recife não soma ponto.
             </p>
             <p>
+              Atividade física regular (≥150 minutos/semana) reduz 1 ponto; atividade insuficiente soma 1; sedentarismo/inatividade
+              soma 2. Os índices de Castelli são calculados com colesterol total, HDL e LDL: Castelli I = total/HDL e Castelli II =
+              LDL/HDL. Valores intermediários ou altos aumentam a pontuação cardiovascular.
+            </p>
+            <p>
               Pessoa negra, PCD, orientação sexual preenchida como não heterossexual e identidade de gênero trans, travesti,
               não binária ou outra são marcadores de vulnerabilidade social e barreiras de acesso, não causas biológicas diretas.
               Orientação sexual é opcional e só influencia quando informada.
@@ -192,6 +209,8 @@
             <ul class="methodology-list">
               <li><a href="https://dados.recife.pe.gov.br/dataset/area-urbana/resource/b4124768-953e-4080-870e-a655a755f40a" target="_blank" rel="noreferrer">Prefeitura do Recife – Logradouros por face de quadra</a></li>
               <li><a href="https://www.ipea.gov.br/portal/categoria-projetos-e-estatisticas/9939-atlas-da-vulnerabilidade-social" target="_blank" rel="noreferrer">IPEA – Atlas da Vulnerabilidade Social</a></li>
+              <li><a href="https://www.who.int/news-room/fact-sheets/detail/physical-activity" target="_blank" rel="noreferrer">OMS – Atividade física</a></li>
+              <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10799712/" target="_blank" rel="noreferrer">PMC – Índices aterogênicos e razões lipídicas</a></li>
               <li><a href="https://www.who.int/en/news-room/fact-sheets/detail/cardiovascular-diseases-%28cvds%29" target="_blank" rel="noreferrer">OMS – Fatores cardiovasculares</a></li>
               <li><a href="https://professional.heart.org/en/science-news/assessing-and-addressing-cardiovascular-health-in-lgbtq-adults" target="_blank" rel="noreferrer">AHA – Saúde cardiovascular LGBTQ</a></li>
             </ul>
