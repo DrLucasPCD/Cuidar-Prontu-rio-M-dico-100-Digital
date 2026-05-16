@@ -56,6 +56,10 @@ button { font: inherit; border-radius: 10px; border: 1px solid #0d7f84; backgrou
 #extra-exams-list li { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .extra-remove-btn { border: 1px solid #d0dbe6; background: #fff; color: #4b6278; font-weight: 500; padding: 6px 8px; border-radius: 8px; }
 .dictionary-tools { display: grid; gap: 8px; margin-top: 10px; }
+#risk-methodology p { margin: 0 0 10px; line-height: 1.55; }
+.methodology-list { margin: 10px 0 0; padding-left: 18px; }
+.methodology-list li { margin: 6px 0; }
+.methodology-list a { color: #0b6ea8; }
 .report-pre { margin: 0; border: 1px solid #d9e1e8; border-radius: 12px; background: #fafcfd; padding: 12px; white-space: pre-wrap; line-height: 1.45; font-family: "Consolas","Courier New",monospace; font-size: 0.88rem; overflow-wrap: anywhere; word-break: break-word; }
 .report-layout { display: grid; gap: 10px; }
 .verify-box { border: 1px solid #dbe4ed; border-radius: 10px; background: #f8fbfd; padding: 10px; text-align: center; }

@@ -472,6 +472,24 @@ button {
   color: #0a67aa;
 }
 
+#risk-methodology p {
+  margin: 0 0 10px;
+  line-height: 1.55;
+}
+
+.methodology-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.methodology-list li {
+  margin: 6px 0;
+}
+
+.methodology-list a {
+  color: #0a67aa;
+}
+
 .doc-dialog {
   border: 1px solid #d3dee9;
   border-radius: 14px;

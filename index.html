@@ -85,7 +85,7 @@
                     <input id="cep" type="text" inputmode="numeric" maxlength="9" placeholder="00000-000" />
                   </label>
                   <label>
-                    Orientação sexual
+                    Orientação sexual (opcional)
                     <select id="sexual-orientation">
                       <option value="">Não informado</option>
                       <option value="heterossexual">Heterossexual</option>
@@ -93,6 +93,19 @@
                       <option value="bissexual">Bissexual</option>
                       <option value="assexual">Assexual</option>
                       <option value="pansexual">Pansexual</option>
+                      <option value="outra">Outra</option>
+                    </select>
+                  </label>
+                  <label>
+                    Identidade de gênero
+                    <select id="gender-identity">
+                      <option value="">Não informado</option>
+                      <option value="cis_feminina">Mulher cis</option>
+                      <option value="cis_masculina">Homem cis</option>
+                      <option value="mulher_trans">Mulher trans</option>
+                      <option value="homem_trans">Homem trans</option>
+                      <option value="travesti">Travesti</option>
+                      <option value="nao_binaria">Não binária</option>
                       <option value="outra">Outra</option>
                     </select>
                   </label>
@@ -168,6 +181,39 @@
               </ul>
             </section>
 
+            <section class="panel" id="risk-methodology">
+              <h2>Metodologia da estratificação de risco</h2>
+              <p>
+                A calculadora usa um modelo educativo de estratificação, não um escore diagnóstico validado. O risco clínico é
+                estimado por idade, sexo informado, IMC e comorbidades clássicas (hipertensão, diabetes, tabagismo, doença
+                cardiovascular prévia, histórico familiar e obesidade). A esses fatores somam-se determinantes sociais de saúde
+                para sinalizar maior vulnerabilidade, necessidade de busca ativa e cuidado longitudinal na APS.
+              </p>
+              <p>
+                O CEP é usado apenas para localizar uma faixa territorial estadual. O banco local relaciona essa faixa com o IDHM
+                2021 da UF, publicado pelo PNUD/Atlas Brasil a partir da PNAD Contínua do IBGE. O índice socioeconômico usado no
+                app é IDHM x 100: IDHM muito alto (0,800-1,000) soma 0 ponto; alto (0,700-0,799) soma 1 ponto; médio
+                (0,600-0,699) soma 2 pontos; baixo soma 3 pontos. Esse acréscimo entra tanto no risco cardiovascular quanto no
+                risco de AVC.
+              </p>
+              <p>
+                Pessoa negra, PCD, orientação sexual preenchida como não heterossexual e identidade de gênero trans, travesti,
+                não binária ou outra são tratadas como marcadores de vulnerabilidade social e barreiras de acesso, não como
+                causas biológicas diretas. A orientação sexual é opcional e só influencia a conta quando informada.
+              </p>
+              <p class="muted">
+                Limitação científica: esta é uma aproximação ecológica. O CEP não mede renda individual, bairro exato ou
+                exposição real do paciente. Para uso assistencial mais robusto, o ideal é substituir a base estadual por dados
+                locais de território da UBS, setor censitário, IVS municipal/UDH ou cadastro territorial validado pela gestão.
+              </p>
+              <ul class="methodology-list">
+                <li><a href="https://www.undp.org/pt/brazil/desenvolvimento-humano/painel-idhm" target="_blank" rel="noreferrer">PNUD/Atlas Brasil – Painel IDHM 2021</a></li>
+                <li><a href="https://www.ipea.gov.br/portal/categoria-projetos-e-estatisticas/9939-atlas-da-vulnerabilidade-social" target="_blank" rel="noreferrer">IPEA – Atlas da Vulnerabilidade Social</a></li>
+                <li><a href="https://www.who.int/en/news-room/fact-sheets/detail/cardiovascular-diseases-%28cvds%29" target="_blank" rel="noreferrer">OMS – Fatores de risco e determinantes cardiovasculares</a></li>
+                <li><a href="https://professional.heart.org/en/science-news/assessing-and-addressing-cardiovascular-health-in-lgbtq-adults" target="_blank" rel="noreferrer">American Heart Association – Saúde cardiovascular em adultos LGBTQ</a></li>
+              </ul>
+            </section>
+
             <section class="panel" id="final-report">
               <h2>Documento do atendimento</h2>
               <div class="report-layout">
@@ -230,6 +276,7 @@
 
     <script src="./config.js"></script>
     <script src="./cid11-extra.js"></script>
+    <script src="./data/cep-socioeconomico-db.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

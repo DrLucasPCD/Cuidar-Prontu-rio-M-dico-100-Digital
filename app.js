@@ -34,7 +34,11 @@ const cepInput = document.getElementById("cep");
 const blackInput = document.getElementById("is-black");
 const pcdInput = document.getElementById("is-pcd");
 const sexualOrientationInput = document.getElementById("sexual-orientation");
+const genderIdentityInput = document.getElementById("gender-identity");
 const sexualDebutInput = document.getElementById("sexual-debut");
+const cepSocioDb = window.CEP_SOCIO_DB && Array.isArray(window.CEP_SOCIO_DB.entries)
+  ? window.CEP_SOCIO_DB.entries
+  : [];
 
 const BASE_CATALOG = [
   { system: "CID-11", code: "5A11", name: "Diabetes mellitus tipo 2" },
@@ -289,41 +293,74 @@ function orientationLabel(value) {
   return labels[value] || "não informada";
 }
 
+function genderIdentityLabel(value) {
+  const labels = {
+    cis_feminina: "mulher cis",
+    cis_masculina: "homem cis",
+    mulher_trans: "mulher trans",
+    homem_trans: "homem trans",
+    travesti: "travesti",
+    nao_binaria: "não binária",
+    outra: "outra"
+  };
+  return labels[value] || "não informada";
+}
+
 function sexualDebutLabel(value) {
   if (value === "sim") return "sim";
   if (value === "nao") return "não";
   return "não informado";
 }
 
-function getAreaRiskFromCep(cepRaw) {
+function getSocioeconomicByCep(cepRaw) {
   const digits = sanitizeCep(cepRaw);
-  const regionByPrefix = {
-    0: "Grande São Paulo",
-    1: "Interior de São Paulo",
-    2: "Rio de Janeiro e Espírito Santo",
-    3: "Minas Gerais",
-    4: "Bahia e Sergipe",
-    5: "PE/AL/PB/RN",
-    6: "CE/PI/MA/Norte",
-    7: "Centro-Oeste e TO/RO",
-    8: "Paraná e Santa Catarina",
-    9: "Rio Grande do Sul"
-  };
-  const pointsByPrefix = { 0: 0, 1: 0, 2: 1, 3: 1, 4: 1, 5: 2, 6: 2, 7: 1, 8: 0, 9: 0 };
-
   if (digits.length !== 8) {
     return {
+      found: false,
+      indiceSocioeconomico: null,
       points: 1,
-      description: "CEP não informado ou inválido (vulnerabilidade territorial não estratificada)."
+      description: "CEP não informado ou inválido (índice socioeconômico regional não estimado)."
     };
   }
 
-  const prefix = Number(digits[0]);
-  const region = regionByPrefix[prefix] || "região não classificada";
-  const points = Number.isFinite(pointsByPrefix[prefix]) ? pointsByPrefix[prefix] : 1;
+  const cepNumber = Number(digits);
+  const match = cepSocioDb.find((entry) => {
+    const start = Number(String(entry.start || "").replace(/\D/g, ""));
+    const end = Number(String(entry.end || "").replace(/\D/g, ""));
+    if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
+    return cepNumber >= start && cepNumber <= end;
+  });
+
+  if (!match) {
+    return {
+      found: false,
+      indiceSocioeconomico: null,
+      points: 1,
+      description: `CEP ${formatCep(digits)} sem correspondência no banco socioeconômico local.`
+    };
+  }
+
+  const index = Number(match.indiceSocioeconomico);
+  let points = 3;
+  let category = "baixo";
+  if (index >= 80) {
+    points = 0;
+    category = "muito alto";
+  } else if (index >= 70) {
+    points = 1;
+    category = "alto";
+  } else if (index >= 60) {
+    points = 2;
+    category = "médio";
+  }
+
   return {
+    found: true,
+    indiceSocioeconomico: index,
+    idhm2021: match.idhm2021,
+    category,
     points,
-    description: `Área estimada por CEP (${formatCep(digits)} - ${region}).`
+    description: `CEP ${formatCep(digits)} - ${match.uf} (${match.label}), IDHM 2021: ${match.idhm2021}, índice socioeconômico regional: ${index}/100 (${category}).`
   };
 }
 
@@ -333,9 +370,10 @@ function classifyRisk(score, lowLimit, moderateLimit) {
   return "alto";
 }
 
-function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation }) {
-  const areaRisk = getAreaRiskFromCep(cep);
+function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation, genderIdentity }) {
+  const socioeconomicData = getSocioeconomicByCep(cep);
   const isSexualMinority = sexualOrientation && sexualOrientation !== "heterossexual";
+  const hasGenderMinorityVulnerability = ["mulher_trans", "homem_trans", "travesti", "nao_binaria", "outra"].includes(genderIdentity);
 
   let cardioScore = 0;
   if (age >= 60) cardioScore += 4;
@@ -353,7 +391,8 @@ function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, s
   if (isBlack) cardioScore += 1;
   if (isPcd) cardioScore += 1;
   if (isSexualMinority) cardioScore += 1;
-  cardioScore += areaRisk.points;
+  if (hasGenderMinorityVulnerability) cardioScore += 1;
+  cardioScore += socioeconomicData.points;
 
   let strokeScore = 0;
   if (age >= 65) strokeScore += 4;
@@ -368,7 +407,8 @@ function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, s
   if (isBlack) strokeScore += 1;
   if (isPcd) strokeScore += 1;
   if (isSexualMinority) strokeScore += 1;
-  strokeScore += areaRisk.points;
+  if (hasGenderMinorityVulnerability) strokeScore += 1;
+  strokeScore += socioeconomicData.points;
 
   const cardioLevel = classifyRisk(cardioScore, 4, 8);
   const strokeLevel = classifyRisk(strokeScore, 4, 8);
@@ -376,7 +416,7 @@ function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, s
   const strokeEstimate = strokeLevel === "baixo" ? "<5%" : strokeLevel === "moderado" ? "5-9%" : ">=10%";
 
   return {
-    areaRisk,
+    socioeconomicData,
     cardio: { score: cardioScore, level: cardioLevel, estimate: cardioEstimate },
     stroke: { score: strokeScore, level: strokeLevel, estimate: strokeEstimate }
   };
@@ -384,7 +424,10 @@ function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, s
 
 function formatRiskBoxMessage(riskData) {
   if (!riskData) return "Risco cardiovascular e risco de AVC serão calculados após gerar recomendações.";
-  return `Risco cardiovascular: ${riskData.cardio.level} (${riskData.cardio.estimate}) | Risco AVC: ${riskData.stroke.level} (${riskData.stroke.estimate})`;
+  const socioeconomicText = riskData.socioeconomicData.found
+    ? ` | Socioeconômico: ${riskData.socioeconomicData.indiceSocioeconomico}/100 (${riskData.socioeconomicData.category})`
+    : "";
+  return `Risco cardiovascular: ${riskData.cardio.level} (${riskData.cardio.estimate}) | Risco AVC: ${riskData.stroke.level} (${riskData.stroke.estimate})${socioeconomicText}`;
 }
 
 function categorizeSelectedRecommendations(recommendations) {
@@ -511,6 +554,7 @@ function buildReport() {
   const height = document.getElementById("height").value || "não informada";
   const cep = cepInput?.value.trim() || "não informado";
   const sexualOrientation = orientationLabel(sexualOrientationInput?.value);
+  const genderIdentity = genderIdentityLabel(genderIdentityInput?.value);
   const sexualDebut = sexualDebutLabel(sexualDebutInput?.value);
   const isBlack = Boolean(blackInput?.checked);
   const isPcd = Boolean(pcdInput?.checked);
@@ -533,7 +577,8 @@ function buildReport() {
       cep,
       isBlack,
       isPcd,
-      sexualOrientation: sexualOrientationInput?.value
+      sexualOrientation: sexualOrientationInput?.value,
+      genderIdentity: genderIdentityInput?.value
     })
     : null;
   const equityFactors = [];
@@ -541,6 +586,9 @@ function buildReport() {
   if (isPcd) equityFactors.push("pessoa com deficiência (PCD)");
   if (sexualOrientationInput?.value && sexualOrientationInput.value !== "heterossexual") {
     equityFactors.push(`orientação sexual: ${sexualOrientation}`);
+  }
+  if (genderIdentityInput?.value && !["cis_feminina", "cis_masculina"].includes(genderIdentityInput.value)) {
+    equityFactors.push(`identidade de gênero: ${genderIdentity}`);
   }
   const equitySummary = equityFactors.length ? equityFactors.join(", ") : "nenhum fator de equidade adicional marcado";
 
@@ -562,13 +610,14 @@ function buildReport() {
     `Sexo: ${sex}   Idade: ${age}`,
     `Peso: ${weight} kg   Altura: ${height} m`,
     `CEP de residência: ${cep}`,
-    `Orientação sexual: ${sexualOrientation}   Iniciou vida sexual: ${sexualDebut}`,
+    `Orientação sexual: ${sexualOrientation}   Identidade de gênero: ${genderIdentity}`,
+    `Iniciou vida sexual: ${sexualDebut}`,
     `${imcText}`,
     `${riskData ? `Risco cardiovascular: ${riskData.cardio.level} (${riskData.cardio.estimate}) | Risco AVC: ${riskData.stroke.level} (${riskData.stroke.estimate})` : "Risco cardiovascular/AVC: não calculado"}`,
     "",
     `Comorbidades/fatores: ${riskList}`,
     `Fatores de equidade e acesso: ${equitySummary}`,
-    `${riskData ? `Área (CEP) considerada no risco: ${riskData.areaRisk.description}` : "Área (CEP) considerada no risco: não foi possível estimar"}`,
+    `${riskData ? `Área (CEP) considerada no risco: ${riskData.socioeconomicData.description}` : "Área (CEP) considerada no risco: não foi possível estimar"}`,
     "",
     `Classificação de referência (CID-11/APS): ${clsText}`,
     "",
@@ -602,7 +651,8 @@ function calculateCurrentRiskData() {
     cep: cepInput?.value || "",
     isBlack: Boolean(blackInput?.checked),
     isPcd: Boolean(pcdInput?.checked),
-    sexualOrientation: sexualOrientationInput?.value || ""
+    sexualOrientation: sexualOrientationInput?.value || "",
+    genderIdentity: genderIdentityInput?.value || ""
   });
 }
 
@@ -723,6 +773,7 @@ form.addEventListener("submit", (event) => {
   const isBlack = Boolean(blackInput?.checked);
   const isPcd = Boolean(pcdInput?.checked);
   const sexualOrientation = sexualOrientationInput?.value || "";
+  const genderIdentity = genderIdentityInput?.value || "";
   const sexualDebut = sexualDebutInput?.value || "";
   const comorb = getSelectedComorbidities();
 
@@ -736,7 +787,7 @@ form.addEventListener("submit", (event) => {
   }
 
   imcBox.textContent = `IMC: ${imc.toFixed(1)} kg/m² (${imcClass(imc)}).`;
-  const riskData = calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation });
+  const riskData = calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation, genderIdentity });
   if (riskBox) riskBox.textContent = formatRiskBoxMessage(riskData);
   renderRecommendations(recommendationEngine({ sex, age, imc, comorb, sexualDebut }));
   updateReportPreview();
@@ -844,7 +895,7 @@ document.getElementById("sex").addEventListener("change", updateReportPreview);
 document.getElementById("age").addEventListener("input", updateReportPreview);
 document.getElementById("weight").addEventListener("input", updateReportPreview);
 document.getElementById("height").addEventListener("input", updateReportPreview);
-[blackInput, pcdInput, sexualOrientationInput, sexualDebutInput].forEach((field) => {
+[blackInput, pcdInput, sexualOrientationInput, genderIdentityInput, sexualDebutInput].forEach((field) => {
   if (field) field.addEventListener("change", updateReportPreview);
 });
 if (cepInput) {

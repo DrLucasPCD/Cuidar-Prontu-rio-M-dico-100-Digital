@@ -63,7 +63,7 @@
                 <label>Peso (kg)<input id="weight" type="number" min="1" step="0.1" required /></label>
                 <label>Altura (m)<input id="height" type="number" min="0.5" max="2.5" step="0.01" required /></label>
                 <label>CEP de residência<input id="cep" type="text" inputmode="numeric" maxlength="9" placeholder="00000-000" /></label>
-                <label>Orientação sexual
+                <label>Orientação sexual (opcional)
                   <select id="sexual-orientation">
                     <option value="">Não informado</option>
                     <option value="heterossexual">Heterossexual</option>
@@ -71,6 +71,18 @@
                     <option value="bissexual">Bissexual</option>
                     <option value="assexual">Assexual</option>
                     <option value="pansexual">Pansexual</option>
+                    <option value="outra">Outra</option>
+                  </select>
+                </label>
+                <label>Identidade de gênero
+                  <select id="gender-identity">
+                    <option value="">Não informado</option>
+                    <option value="cis_feminina">Mulher cis</option>
+                    <option value="cis_masculina">Homem cis</option>
+                    <option value="mulher_trans">Mulher trans</option>
+                    <option value="homem_trans">Homem trans</option>
+                    <option value="travesti">Travesti</option>
+                    <option value="nao_binaria">Não binária</option>
                     <option value="outra">Outra</option>
                   </select>
                 </label>
@@ -150,6 +162,35 @@
             </ul>
           </section>
 
+          <section class="card" id="risk-methodology">
+            <h2>Metodologia da estratificação de risco</h2>
+            <p>
+              A calculadora usa um modelo educativo de estratificação, não um escore diagnóstico validado. O risco clínico é
+              estimado por idade, sexo informado, IMC e comorbidades clássicas. Determinantes sociais entram como sinalizadores
+              de vulnerabilidade, busca ativa e cuidado longitudinal na APS.
+            </p>
+            <p>
+              O CEP localiza uma faixa territorial estadual. O banco local relaciona essa faixa ao IDHM 2021 da UF, publicado
+              pelo PNUD/Atlas Brasil com dados da PNAD Contínua do IBGE. O índice socioeconômico é IDHM x 100: muito alto soma
+              0 ponto; alto soma 1; médio soma 2; baixo soma 3.
+            </p>
+            <p>
+              Pessoa negra, PCD, orientação sexual preenchida como não heterossexual e identidade de gênero trans, travesti,
+              não binária ou outra são marcadores de vulnerabilidade social e barreiras de acesso, não causas biológicas diretas.
+              Orientação sexual é opcional e só influencia quando informada.
+            </p>
+            <p class="muted">
+              Limitação: é uma aproximação ecológica. O CEP não mede renda individual, bairro exato ou exposição real. O ideal é
+              substituir por dados locais da UBS, setor censitário, IVS municipal/UDH ou cadastro territorial validado.
+            </p>
+            <ul class="methodology-list">
+              <li><a href="https://www.undp.org/pt/brazil/desenvolvimento-humano/painel-idhm" target="_blank" rel="noreferrer">PNUD/Atlas Brasil – Painel IDHM 2021</a></li>
+              <li><a href="https://www.ipea.gov.br/portal/categoria-projetos-e-estatisticas/9939-atlas-da-vulnerabilidade-social" target="_blank" rel="noreferrer">IPEA – Atlas da Vulnerabilidade Social</a></li>
+              <li><a href="https://www.who.int/en/news-room/fact-sheets/detail/cardiovascular-diseases-%28cvds%29" target="_blank" rel="noreferrer">OMS – Fatores cardiovasculares</a></li>
+              <li><a href="https://professional.heart.org/en/science-news/assessing-and-addressing-cardiovascular-health-in-lgbtq-adults" target="_blank" rel="noreferrer">AHA – Saúde cardiovascular LGBTQ</a></li>
+            </ul>
+          </section>
+
           <section class="card" id="final-report">
             <h2>Documento do atendimento</h2>
             <div class="report-layout">
@@ -160,6 +201,7 @@
     </div>
     <script src="./config.js"></script>
     <script src="./cid11-extra.js"></script>
+    <script src="./data/cep-socioeconomico-db.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
