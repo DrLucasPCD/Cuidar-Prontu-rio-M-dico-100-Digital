@@ -12,7 +12,7 @@
       "**/.*",
       "**/node_modules/**",
       "functions/**",
-      "data/**"
+      "scripts/**"
     ],
     "rewrites": [
       {

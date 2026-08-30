@@ -50,6 +50,9 @@ legend { padding: 0 8px; color: #50687d; }
 button { font: inherit; border-radius: 10px; border: 1px solid #0d7f84; background: linear-gradient(90deg, #0e767a, #149197); color: #fff; padding: 10px 12px; font-weight: 600; cursor: pointer; }
 .imc-box { border: 1px solid #d5dfe7; border-radius: 12px; padding: 10px; background: #f8fbfc; color: #0a5761; font-weight: 600; }
 .hint, .muted { color: var(--muted); font-size: 0.9rem; }
+.territory-status { display: block; color: var(--muted); font-size: 0.78rem; font-weight: 400; line-height: 1.35; }
+.territory-status[data-status="ok"] { color: #146c52; }
+.territory-status[data-status="carregando"] { color: #8a5a00; }
 .list { margin: 0; padding-left: 18px; } .list li { margin: 8px 0; }
 .recommendation-choice { display: flex; gap: 8px; align-items: flex-start; }
 .extra-exam-tools { margin-top: 10px; display: grid; gap: 8px; }

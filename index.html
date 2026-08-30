@@ -92,6 +92,7 @@
                   <label>
                     CEP de residência
                     <input id="cep" type="text" inputmode="numeric" maxlength="9" placeholder="00000-000" />
+                    <small id="territory-box" class="territory-status">Informe um CEP de Pernambuco para consultar o indicador territorial.</small>
                   </label>
                   <label>
                     Colesterol total (mg/dL)
@@ -211,17 +212,20 @@
                 para sinalizar maior vulnerabilidade, necessidade de busca ativa e cuidado longitudinal na APS.
               </p>
               <p>
-                O CEP é cruzado com a base oficial “Logradouros por face de quadra”, do Portal de Dados Abertos da Prefeitura do
-                Recife. Para cada CEP, o app agrega as faces de quadra encontradas e calcula um índice socioeconômico-territorial
-                de 0 a 100 com estes pesos: esgoto (30%), água (20%), pavimentação (15%), coleta de lixo (15%), iluminação
-                (10%) e limpeza urbana (10%). Quando o CEP exato não aparece na base, o app usa a média do prefixo postal de 5
-                dígitos, se houver CEPs oficiais relacionados. O CEP genérico 50000-000 foi excluído por aparecer na fonte como
-                valor amplo em múltiplos bairros.
+                Em Recife, o CEP é cruzado com a base oficial “Logradouros por face de quadra”, do Portal de Dados Abertos da
+                Prefeitura. Para cada CEP, o app agrega as faces encontradas e calcula um índice de 0 a 100 com esgoto (30%),
+                água (20%), pavimentação (15%), coleta de lixo (15%), iluminação (10%) e limpeza urbana (10%). Quando o CEP
+                exato não aparece, usa a média do prefixo postal de 5 dígitos. O CEP genérico 50000-000 foi excluído.
               </p>
               <p>
-                A pontuação territorial foi recalibrada para a base municipal: índice ≥85 soma 0 ponto; 70-84 soma 1 ponto;
-                55-69 soma 2 pontos; abaixo de 55 soma 3 pontos. Esse acréscimo entra tanto no risco cardiovascular quanto no
-                risco de AVC. CEP inválido ou fora da base oficial do Recife não soma ponto territorial.
+                Nos demais municípios de Pernambuco, o CEP é resolvido sem armazenamento e associado ao código municipal do
+                IBGE. O indicador usa a média das coberturas do Censo 2022 de rede geral de água como fonte principal,
+                esgotamento por rede/rede pluvial/fossa ligada à rede e coleta de lixo. A tela informa se a precisão é por CEP,
+                por prefixo ou apenas municipal.
+              </p>
+              <p>
+                Em ambas as bases, índice ≥85 soma 0 ponto; 70-84 soma 1; 55-69 soma 2; abaixo de 55 soma 3. Esse acréscimo
+                entra no risco cardiovascular e de AVC. CEP inválido, fora de Pernambuco ou indisponível não soma ponto.
               </p>
               <p>
                 A atividade física entra como fator modificável: atividade regular (≥150 minutos/semana) reduz 1 ponto do risco,
@@ -247,6 +251,7 @@
               </p>
               <ul class="methodology-list">
                 <li><a href="https://dados.recife.pe.gov.br/dataset/area-urbana/resource/b4124768-953e-4080-870e-a655a755f40a" target="_blank" rel="noreferrer">Prefeitura do Recife – Logradouros por face de quadra</a></li>
+                <li><a href="https://sidra.ibge.gov.br/pesquisa/censo-demografico/demografico-2022/universo-caracteristicas-dos-domicilios" target="_blank" rel="noreferrer">IBGE/SIDRA – Censo 2022, características dos domicílios</a></li>
                 <li><a href="https://www.ipea.gov.br/portal/categoria-projetos-e-estatisticas/9939-atlas-da-vulnerabilidade-social" target="_blank" rel="noreferrer">IPEA – Atlas da Vulnerabilidade Social</a></li>
                 <li><a href="https://www.who.int/news-room/fact-sheets/detail/physical-activity" target="_blank" rel="noreferrer">OMS – Atividade física</a></li>
                 <li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10799712/" target="_blank" rel="noreferrer">PMC – Índices aterogênicos e razões lipídicas</a></li>
@@ -319,6 +324,7 @@
     <script src="./config.js"></script>
     <script src="./cid11-extra.js"></script>
     <script src="./data/cep-socioeconomico-db.js"></script>
+    <script src="./data/pe-municipal-territory-db.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>

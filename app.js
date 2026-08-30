@@ -32,6 +32,7 @@ const step2Section = document.getElementById("step-2-section");
 const step3Section = document.getElementById("final-report");
 const riskBox = document.getElementById("risk-box");
 const cepInput = document.getElementById("cep");
+const territoryBox = document.getElementById("territory-box");
 const physicalActivityInput = document.getElementById("physical-activity");
 const totalCholesterolInput = document.getElementById("total-cholesterol");
 const hdlCholesterolInput = document.getElementById("hdl-cholesterol");
@@ -50,6 +51,15 @@ const cepSocioByCep = new Map(
     .map((entry) => [String(entry.cep).replace(/\D/g, ""), entry])
 );
 const cepSocioByPrefix5 = buildCepPrefixIndex(cepSocioDb);
+const peMunicipalDb = window.PE_MUNICIPAL_TERRITORY_DB && Array.isArray(window.PE_MUNICIPAL_TERRITORY_DB.entries)
+  ? window.PE_MUNICIPAL_TERRITORY_DB
+  : { entries: [] };
+const peMunicipalByIbge = new Map(
+  peMunicipalDb.entries.map((entry) => [String(entry.ibge || ""), entry])
+);
+const API_BASE = (window.CUIDAR_API_BASE || "/api").replace(/\/$/, "");
+let cepLookupTimer = null;
+let cepResolutionState = { cep: "", status: "idle", data: null, error: "" };
 
 const BASE_CATALOG = [
   { system: "CID-11", code: "5A11", name: "Diabetes mellitus tipo 2" },
@@ -468,6 +478,64 @@ function getSocioeconomicByCep(cepRaw) {
   const prefixMatch = cepSocioByPrefix5.get(digits.slice(0, 5));
   const match = exactMatch || prefixMatch;
 
+  if (!match && cepResolutionState.cep === digits && cepResolutionState.status === "resolved") {
+    const resolution = cepResolutionState.data;
+    if (resolution.uf !== "PE") {
+      return {
+        found: false,
+        indiceSocioeconomico: null,
+        points: 0,
+        precision: "fora_da_area",
+        description: `CEP ${formatCep(digits)} localizado em ${resolution.municipality}/${resolution.uf}, fora da cobertura de Pernambuco (sem ajuste territorial).`
+      };
+    }
+
+    const municipal = peMunicipalByIbge.get(String(resolution.municipalityIbge || ""));
+    if (!municipal) {
+      return {
+        found: false,
+        indiceSocioeconomico: null,
+        points: 0,
+        precision: "indisponivel",
+        description: `CEP ${formatCep(digits)} localizado em ${resolution.municipality}/PE, mas sem indicador municipal disponível (sem ajuste territorial).`
+      };
+    }
+
+    return {
+      found: true,
+      indiceSocioeconomico: Number(municipal.indiceSocioeconomico),
+      privacaoTerritorial: Number(municipal.privacaoTerritorial),
+      category: municipal.category,
+      points: Number(municipal.points),
+      components: municipal.indicators,
+      source: peMunicipalDb.source,
+      sourceUrl: peMunicipalDb.sourceUrl,
+      sourceReference: peMunicipalDb.referenceYear,
+      precision: "municipal",
+      description: `CEP ${formatCep(digits)} - ${resolution.municipality}/PE, índice territorial municipal: ${municipal.indiceSocioeconomico}/100 (${municipal.category}; Censo ${peMunicipalDb.referenceYear}, precisão municipal).`
+    };
+  }
+
+  if (!match && cepResolutionState.cep === digits && cepResolutionState.status === "loading") {
+    return {
+      found: false,
+      indiceSocioeconomico: null,
+      points: 0,
+      precision: "carregando",
+      description: `CEP ${formatCep(digits)} em consulta territorial (o risco será atualizado automaticamente).`
+    };
+  }
+
+  if (!match && cepResolutionState.cep === digits && cepResolutionState.status === "error") {
+    return {
+      found: false,
+      indiceSocioeconomico: null,
+      points: 0,
+      precision: "indisponivel",
+      description: `${cepResolutionState.error} Sem ajuste territorial no risco.`
+    };
+  }
+
   if (!match) {
     return {
       found: false,
@@ -493,8 +561,66 @@ function getSocioeconomicByCep(cepRaw) {
     points: classification.points,
     components: match.components || null,
     source: window.CEP_SOCIO_DB?.source || "Base oficial local",
-    description: `${location}, índice socioeconômico-territorial: ${index}/100 (${classification.category}).`
+    sourceUrl: window.CEP_SOCIO_DB?.sourceUrl || "",
+    sourceReference: window.CEP_SOCIO_DB?.sourceUpdatedAt || "",
+    precision: exactMatch ? "cep_exato" : "prefixo_cep",
+    description: `${location}, índice socioeconômico-territorial: ${index}/100 (${classification.category}; precisão ${exactMatch ? "por CEP" : "aproximada por prefixo"}).`
   };
+}
+
+async function resolveTerritoryForCep(rawCep) {
+  const digits = sanitizeCep(rawCep);
+  if (digits.length !== 8) {
+    cepResolutionState = { cep: digits, status: "idle", data: null, error: "" };
+    return;
+  }
+
+  if (cepSocioByCep.has(digits) || cepSocioByPrefix5.has(digits.slice(0, 5))) {
+    cepResolutionState = { cep: digits, status: "local", data: null, error: "" };
+    return;
+  }
+
+  if (cepResolutionState.cep === digits && ["loading", "resolved"].includes(cepResolutionState.status)) {
+    return;
+  }
+
+  cepResolutionState = { cep: digits, status: "loading", data: null, error: "" };
+  updateReportPreview();
+  try {
+    const response = await fetch(`${API_BASE}/territory/cep/${encodeURIComponent(digits)}`, {
+      headers: { Accept: "application/json" }
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Não foi possível consultar o CEP.");
+    if (sanitizeCep(cepInput?.value) !== digits) return;
+    cepResolutionState = { cep: digits, status: "resolved", data: payload, error: "" };
+  } catch (error) {
+    if (sanitizeCep(cepInput?.value) !== digits) return;
+    cepResolutionState = {
+      cep: digits,
+      status: "error",
+      data: null,
+      error: error.message || "Consulta territorial indisponível."
+    };
+  }
+  updateReportPreview();
+}
+
+function scheduleTerritoryLookup(rawCep) {
+  clearTimeout(cepLookupTimer);
+  const digits = sanitizeCep(rawCep);
+  if (digits.length !== 8) {
+    cepResolutionState = { cep: digits, status: "idle", data: null, error: "" };
+    return;
+  }
+  cepLookupTimer = setTimeout(() => resolveTerritoryForCep(digits), 450);
+}
+
+function updateTerritoryBox() {
+  if (!territoryBox) return;
+  const territorial = getSocioeconomicByCep(cepInput?.value || "");
+  territoryBox.textContent = territorial.description;
+  territoryBox.dataset.status = territorial.found ? "ok" : territorial.precision || "idle";
 }
 
 function classifyRisk(score, lowLimit, moderateLimit) {
@@ -807,6 +933,7 @@ function calculateCurrentRiskData() {
 }
 
 function updateReportPreview() {
+  updateTerritoryBox();
   if (castelliBox) castelliBox.textContent = calcCastelliIndices().summary;
   if (riskBox) {
     const riskData = calculateCurrentRiskData();
@@ -816,6 +943,8 @@ function updateReportPreview() {
 }
 
 function clearCurrentFormData() {
+  clearTimeout(cepLookupTimer);
+  cepResolutionState = { cep: "", status: "idle", data: null, error: "" };
   if (form) form.reset();
   classificationInput.value = "";
   classificationMatch.textContent = "";
@@ -921,13 +1050,14 @@ function renderRecommendations(items) {
   });
 }
 
-form.addEventListener("submit", (event) => {
+form.addEventListener("submit", async (event) => {
   event.preventDefault();
   const sex = document.getElementById("sex").value;
   const age = Number(document.getElementById("age").value);
   const weight = Number(document.getElementById("weight").value);
   const height = Number(document.getElementById("height").value);
   const cep = cepInput?.value || "";
+  await resolveTerritoryForCep(cep);
   const physicalActivity = physicalActivityInput?.value || "";
   const isBlack = Boolean(blackInput?.checked);
   const isPcd = Boolean(pcdInput?.checked);
@@ -1066,6 +1196,7 @@ if (physicalActivityInput) physicalActivityInput.addEventListener("change", upda
 if (cepInput) {
   cepInput.addEventListener("input", () => {
     cepInput.value = formatCep(cepInput.value);
+    scheduleTerritoryLookup(cepInput.value);
     updateReportPreview();
   });
 }

@@ -378,6 +378,23 @@ button {
   color: var(--muted);
 }
 
+.territory-status {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.territory-status[data-status="ok"] {
+  color: #146c52;
+}
+
+.territory-status[data-status="carregando"] {
+  color: #8a5a00;
+}
+
 .dictionary-tools {
   display: flex;
   flex-wrap: wrap;

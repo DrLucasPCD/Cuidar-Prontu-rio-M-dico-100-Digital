@@ -1,6 +1,7 @@
 const http = require("http");
 const fsp = require("fs/promises");
 const path = require("path");
+const { resolveCep } = require("./functions/territory");
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
 const ROOT = process.cwd();
@@ -28,6 +29,12 @@ function nowIso() {
 async function handleApi(req, res, urlObj) {
   if (req.method === "GET" && urlObj.pathname === "/api/health") {
     return json(res, 200, { ok: true, ts: nowIso() });
+  }
+
+  if (req.method === "GET" && urlObj.pathname.startsWith("/api/territory/cep/")) {
+    const cep = urlObj.pathname.slice("/api/territory/cep/".length);
+    const result = await resolveCep(cep);
+    return json(res, result.status, result.ok ? result.data : { error: result.error });
   }
 
   if (req.method === "POST" && urlObj.pathname === "/api/documents") {

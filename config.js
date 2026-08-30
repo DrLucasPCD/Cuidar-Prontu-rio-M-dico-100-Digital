@@ -1,3 +1,5 @@
-// Configuração de API para ambientes sem Firebase Hosting (ex.: Netlify, Vercel).
-// Se necessário, ajuste a URL abaixo.
-window.CUIDAR_API_BASE = "https://southamerica-east1-cuidarmais-7d01d.cloudfunctions.net/api";
+// Em desenvolvimento, usa o servidor local. Em hospedagem estática, usa a Function.
+const isLocalCuidar = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+window.CUIDAR_API_BASE = isLocalCuidar
+  ? "/api"
+  : "https://southamerica-east1-cuidarmais-7d01d.cloudfunctions.net/api";

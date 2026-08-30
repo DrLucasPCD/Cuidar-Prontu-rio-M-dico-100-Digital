@@ -19,11 +19,32 @@ node server.js
 - Não há salvamento de rascunho de atendimento.
 - Não há persistência de dados de atendimento em banco.
 - Geração de documento é local (visualização/cópia/impressão/PDF).
+- A vulnerabilidade territorial cobre Pernambuco em dois níveis de precisão:
+  - Recife: dados por CEP ou prefixo, derivados das faces de quadra da Prefeitura;
+  - demais localidades: indicador municipal derivado do Censo 2022/IBGE.
+
+## Base territorial de Pernambuco
+
+O arquivo `data/pe-municipal-territory-db.js` é gerado com dados oficiais das tabelas 6803, 6805 e 6892 do SIDRA/IBGE. O índice municipal é a média aritmética de:
+
+- domicílios ligados à rede geral de água e que a usam como fonte principal;
+- domicílios com rede geral, rede pluvial ou fossa ligada à rede;
+- domicílios com lixo coletado.
+
+Para reconstruir a base usando o período mais recente publicado nessas tabelas:
+
+```bash
+node scripts/update-territorial-data.js
+```
+
+O workflow `.github/workflows/update-territorial-data.yml` executa essa verificação mensalmente e registra uma nova versão somente quando o IBGE publicar mudanças. Isso é atualização automática da fonte, não medição territorial em tempo real.
+
+Para CEPs fora da base detalhada do Recife, a API consulta o ViaCEP apenas para obter UF, município e código IBGE. O CEP não é salvo em banco nem registrado em prontuário persistente. Se a consulta falhar, nenhum ponto territorial é acrescentado.
 
 ## Privacidade e LGPD
 
 - O documento final reforça que o uso é educativo e sem coleta de identificadores.
-- O único armazenamento local mantido é o dicionário de classificação CID/APS (`classificationCatalogV1`), sem vínculo com indivíduos.
+- O único armazenamento persistente no navegador é o dicionário de classificação CID/APS (`classificationCatalogV1`), sem vínculo com indivíduos. A consulta de CEP usa apenas memória temporária no servidor.
 - A rota de validação ([http://localhost:3000/verify.html](http://localhost:3000/verify.html)) permanece apenas informativa no modo sem persistência.
 
 ---
