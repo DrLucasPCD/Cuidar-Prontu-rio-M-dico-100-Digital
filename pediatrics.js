@@ -122,7 +122,10 @@
         <div class="pediatric-main">
           <section class="panel card peds-card peds-hero-card">
             <div><span class="peds-eyebrow">PUERICULTURA</span><h2>Acompanhamento pediátrico</h2><p>Crescimento, desenvolvimento, M-CHAT-R/F e saúde bucal em um fluxo longitudinal.</p></div>
-            <button id="peds-reset" class="peds-secondary" type="button">Limpar avaliação</button>
+            <div class="peds-hero-actions">
+              <button id="peds-reset" class="peds-secondary" type="button">Limpar formulário</button>
+              <button id="peds-generate-document" type="button">Gerar documento</button>
+            </div>
           </section>
 
           <form id="peds-form">
@@ -540,6 +543,11 @@
     } catch { alert("Não foi possível copiar automaticamente. Verifique as permissões do navegador."); }
   });
   $("#peds-print").addEventListener("click", () => { updateReportAndAlerts(); window.print(); });
+  $("#peds-generate-document").addEventListener("click", () => {
+    if (!form.reportValidity()) return;
+    calculateAssessment();
+    $("#peds-final-report").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   $("#peds-reset").addEventListener("click", () => {
     form.reset();
     $("#peds-visit-date").value = today;
