@@ -23,6 +23,30 @@ node server.js
   - Recife: dados por CEP ou prefixo, derivados das faces de quadra da Prefeitura;
   - demais localidades: indicador municipal derivado do Censo 2022/IBGE.
 
+## Acompanhamento pediátrico
+
+O seletor **Tipo de acompanhamento** abre um fluxo independente de puericultura nas versões web e móvel. Esse fluxo inclui:
+
+- idade cronológica e idade corrigida para prematuros até 2 anos;
+- peso, comprimento/estatura, perímetro cefálico e IMC;
+- escores-Z e percentis para P/I, E/I, P/E, IMC/I e PC/I, conforme a faixa aplicável;
+- padrões OMS 2006 de 0 a 5 anos e referência OMS 2007 de 5 a 19 anos, calculados localmente;
+- conversão de 0,7 cm quando a técnica de comprimento/estatura não corresponde à faixa etária;
+- velocidade de crescimento quando há uma medida anterior com data;
+- marcos do desenvolvimento de RN a 18 meses nos domínios social, comunicação, cognição e motricidade;
+- sinais de alerta, fatores para consultas mais frequentes e lembrete do próximo acompanhamento;
+- M-CHAT-R/F com 20 itens, algoritmo de risco e registro da Entrevista de Seguimento;
+- desenvolvimento dentário, higiene bucal, exposição a telas e uso de andador;
+- resumo pediátrico local para cópia, impressão ou PDF.
+
+Os arquivos `data/who-growth-data.js`, `pediatric-core.js` e `pediatrics.js` concentram, respectivamente, as tabelas oficiais, os cálculos puros e a interface. O módulo é educativo: triagem não é diagnóstico e os resultados devem ser integrados à história, ao exame e à trajetória da criança.
+
+Para executar os testes do motor pediátrico:
+
+```bash
+node --test tests/pediatric-core.test.js
+```
+
 ## Base territorial de Pernambuco
 
 O arquivo `data/pe-municipal-territory-db.js` é gerado com dados oficiais das tabelas 6803, 6805 e 6892 do SIDRA/IBGE. O índice municipal é a média aritmética de:

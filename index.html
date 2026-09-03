@@ -11,6 +11,7 @@
     <link rel="icon" type="image/png" sizes="192x192" href="./logo-cuidar.png" />
     <link rel="apple-touch-icon" href="./logo-cuidar.png" />
     <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles-pediatric.css?v=1" />
   </head>
   <body>
     <div class="layout">
@@ -43,6 +44,17 @@
             <button id="generate-document-btn" class="solid" type="button">Gerar documento</button>
           </div>
         </header>
+
+        <section class="care-mode-switch no-print" aria-labelledby="care-mode-title">
+          <div>
+            <strong id="care-mode-title">Tipo de acompanhamento</strong>
+            <small>Escolha o fluxo adequado antes de preencher.</small>
+          </div>
+          <div class="care-mode-options">
+            <label><input type="radio" name="care-mode" value="adult" checked /> Preventivo adulto</label>
+            <label><input type="radio" name="care-mode" value="pediatric" /> Puericultura</label>
+          </div>
+        </section>
 
         <section class="steps">
           <div class="step active" data-step="1"><span>1</span> Perfil clínico</div>
@@ -325,6 +337,9 @@
     <script src="./cid11-extra.js"></script>
     <script src="./data/cep-socioeconomico-db.js"></script>
     <script src="./data/pe-municipal-territory-db.js"></script>
+    <script src="./data/who-growth-data.js"></script>
+    <script src="./pediatric-core.js"></script>
+    <script src="./pediatrics.js"></script>
     <script src="./app.js"></script>
   </body>
 </html>
