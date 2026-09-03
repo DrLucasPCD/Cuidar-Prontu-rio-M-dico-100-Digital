@@ -122,10 +122,6 @@
         <div class="pediatric-main">
           <section class="panel card peds-card peds-hero-card">
             <div><span class="peds-eyebrow">PUERICULTURA</span><h2>Acompanhamento pediátrico</h2><p>Crescimento, desenvolvimento, M-CHAT-R/F e saúde bucal em um fluxo longitudinal.</p></div>
-            <div class="peds-hero-actions">
-              <button id="peds-reset" class="peds-secondary" type="button">Limpar formulário</button>
-              <button id="peds-generate-document" type="button">Gerar documento</button>
-            </div>
           </section>
 
           <form id="peds-form">
@@ -509,16 +505,13 @@
       adultDesktop.hidden = pediatric;
       document.querySelector(".steps")?.toggleAttribute("hidden", pediatric);
     } else {
-      const quickCard = document.getElementById("copy-btn")?.closest(".card");
       const firstAdult = document.getElementById("clinical-form")?.closest(".card");
       const cards = [...document.querySelectorAll(".app-content > .card")];
       const startIndex = cards.indexOf(firstAdult);
       cards.forEach((card, index) => {
-        if (card === quickCard || index >= startIndex) card.hidden = pediatric;
+        if (index >= startIndex) card.hidden = pediatric;
       });
     }
-    document.getElementById("generate-document-btn")?.toggleAttribute("hidden", pediatric);
-    document.getElementById("reset-form-btn")?.toggleAttribute("hidden", pediatric);
     document.body.dataset.careMode = pediatric ? "pediatric" : "adult";
     if (pediatric) updateAgeContext();
   }
@@ -543,12 +536,14 @@
     } catch { alert("Não foi possível copiar automaticamente. Verifique as permissões do navegador."); }
   });
   $("#peds-print").addEventListener("click", () => { updateReportAndAlerts(); window.print(); });
-  $("#peds-generate-document").addEventListener("click", () => {
+
+  function generatePediatricDocument() {
     if (!form.reportValidity()) return;
     calculateAssessment();
     $("#peds-final-report").scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-  $("#peds-reset").addEventListener("click", () => {
+  }
+
+  function resetPediatricForm() {
     form.reset();
     $("#peds-visit-date").value = today;
     lastAssessment = null;
@@ -560,7 +555,21 @@
     $("#peds-mchat-follow").innerHTML = "";
     updateAgeContext();
     updateReportAndAlerts();
-  });
+  }
+
+  document.getElementById("generate-document-btn")?.addEventListener("click", (event) => {
+    if (document.body.dataset.careMode !== "pediatric") return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    generatePediatricDocument();
+  }, true);
+
+  document.getElementById("reset-form-btn")?.addEventListener("click", (event) => {
+    if (document.body.dataset.careMode !== "pediatric") return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    resetPediatricForm();
+  }, true);
 
   const newRecord = document.getElementById("new-record-btn");
   if (newRecord) newRecord.addEventListener("click", (event) => {

@@ -109,13 +109,6 @@
   color: #60768a;
 }
 
-.peds-hero-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
 .peds-eyebrow {
   color: #0d7b7f;
   font-size: 0.76rem;
@@ -519,8 +512,6 @@ button:disabled {
   .pediatric-content { padding: 10px 12px 18px; }
   .app-content > .pediatric-content { padding: 0; }
   .peds-hero-card { align-items: stretch; flex-direction: column; }
-  .peds-hero-actions { display: grid; grid-template-columns: 1fr 1fr; }
-  .peds-hero-actions button { white-space: normal; }
   .peds-grid, .peds-result-grid, .peds-check-grid, .peds-mchat-grid { grid-template-columns: 1fr; }
   .peds-milestone-row { grid-template-columns: 1fr; }
   .peds-milestone-row > span { align-items: flex-start; flex-direction: column; }

@@ -1248,11 +1248,15 @@ if (helpBtn) {
   });
 }
 
-if (generateDocumentBtn && documentDialog) {
+if (generateDocumentBtn) {
   generateDocumentBtn.addEventListener("click", () => {
     setActiveStep(3);
     updateReportPreview();
-    documentDialog.showModal();
+    if (documentDialog) {
+      documentDialog.showModal();
+    } else {
+      step3Section?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   });
 }
 
