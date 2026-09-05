@@ -258,6 +258,12 @@
   let lastMchat = null;
   let mchatWasEligible = false;
 
+  const anthropometrySelectors = [
+    "#peds-dob", "#peds-visit-date", "#peds-sex", "#peds-gest-weeks", "#peds-weight",
+    "#peds-height", "#peds-height-method", "#peds-head", "#peds-prev-date",
+    "#peds-prev-weight", "#peds-prev-height", "#peds-prev-head"
+  ];
+
   function currentAge() {
     return Core.ageDetails($("#peds-dob").value, $("#peds-visit-date").value, $("#peds-gest-weeks").value);
   }
@@ -336,6 +342,25 @@
     return follow;
   }
 
+  function resetMchatResult() {
+    lastMchat = null;
+    const box = $("#peds-mchat-result");
+    box.textContent = "Questionário ainda não calculado.";
+    box.className = "peds-callout peds-callout-neutral";
+    $("#peds-mchat-follow").hidden = true;
+    $("#peds-mchat-follow").innerHTML = "";
+    $("#peds-summary-mchat").textContent = "M-CHAT-R não calculado";
+  }
+
+  function invalidateAssessment() {
+    lastAssessment = null;
+    $("#peds-growth-results").innerHTML = '<p class="muted">Medidas alteradas. Calcule novamente para atualizar os indicadores.</p>';
+    $("#peds-z-chart").innerHTML = "";
+    $("#peds-summary-growth").textContent = "Crescimento não calculado";
+    renderVelocity();
+    updateReportAndAlerts();
+  }
+
   function renderFollowUp(result) {
     const container = $("#peds-mchat-follow");
     if (!result.complete || result.score < 3 || result.score > 7) {
@@ -382,6 +407,8 @@
     const container = $("#peds-growth-results");
     if (!assessment.results.length) {
       container.innerHTML = `<p class="muted">${assessment.errors.join(" ") || "Não foi possível calcular os indicadores."}</p>`;
+      $("#peds-z-chart").innerHTML = "";
+      $("#peds-summary-growth").textContent = "Crescimento não calculado";
       return;
     }
     container.innerHTML = assessment.results.map((item) => `
@@ -498,6 +525,18 @@
     updateReportAndAlerts();
   }
 
+  function refreshPediatricDocument({ validate = false } = {}) {
+    const valid = validate ? form.reportValidity() : form.checkValidity();
+    if (valid) calculateAssessment();
+    else {
+      lastAssessment = null;
+      renderGrowth({ results: [], errors: ["Dados antropométricos incompletos ou inválidos."] });
+      renderVelocity();
+      updateReportAndAlerts();
+    }
+    return valid;
+  }
+
   function setMode(mode) {
     const pediatric = mode === "pediatric";
     pediatricContent.hidden = !pediatric;
@@ -518,28 +557,39 @@
 
   document.querySelectorAll('input[name="care-mode"]').forEach((input) => input.addEventListener("change", () => setMode(input.value)));
   form.addEventListener("submit", calculateAssessment);
-  dateFields.forEach((field) => field.addEventListener("input", () => { updateAgeContext(); updateReportAndAlerts(); }));
+  dateFields.forEach((field) => field.addEventListener("input", () => {
+    updateAgeContext();
+    if (field === $("#peds-dob") || field === $("#peds-visit-date")) resetMchatResult();
+  }));
   $("#peds-height-method").addEventListener("change", (event) => { event.target.dataset.userChanged = "true"; });
+  anthropometrySelectors.forEach((selector) => {
+    const field = $(selector);
+    const eventName = field.tagName === "SELECT" ? "change" : "input";
+    field.addEventListener(eventName, invalidateAssessment);
+  });
   pediatricContent.addEventListener("change", (event) => {
     if (event.target.classList.contains("peds-milestone") || event.target.matches("input[type=checkbox], #peds-teeth, #peds-oral-hygiene, #peds-screens, #peds-walker, #peds-eruption-age, #peds-tooth-count")) updateReportAndAlerts();
     if (event.target.classList.contains("peds-follow-select")) calculateMchat();
+    if (event.target.matches('#peds-mchat-questions input[type="radio"]')) {
+      resetMchatResult();
+      updateReportAndAlerts();
+    }
   });
   $("#peds-notes").addEventListener("input", updateReportAndAlerts);
   $("#peds-score-mchat").addEventListener("click", calculateMchat);
   $("#peds-copy").addEventListener("click", async (event) => {
-    updateReportAndAlerts();
+    refreshPediatricDocument();
+    const button = event.currentTarget;
+    const originalHtml = button.innerHTML;
     try {
       await navigator.clipboard.writeText($("#peds-report").textContent);
-      const button = event.currentTarget;
       button.textContent = "Resumo copiado";
-      setTimeout(() => { button.textContent = "Copiar resumo"; }, 1200);
+      setTimeout(() => { button.innerHTML = originalHtml; }, 1200);
     } catch { alert("Não foi possível copiar automaticamente. Verifique as permissões do navegador."); }
   });
-  $("#peds-print").addEventListener("click", () => { updateReportAndAlerts(); window.print(); });
-
+  $("#peds-print").addEventListener("click", () => { refreshPediatricDocument(); window.print(); });
   function generatePediatricDocument() {
-    if (!form.reportValidity()) return;
-    calculateAssessment();
+    if (!refreshPediatricDocument({ validate: true })) return;
     $("#peds-final-report").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -548,28 +598,42 @@
     $("#peds-visit-date").value = today;
     lastAssessment = null;
     lastMchat = null;
+    mchatWasEligible = false;
+    delete $("#peds-height-method").dataset.userChanged;
+    pediatricContent.querySelectorAll("details").forEach((details) => { details.open = false; });
     $("#peds-growth-results").innerHTML = '<p class="muted">Preencha as medidas e clique em calcular.</p>';
     $("#peds-z-chart").innerHTML = "";
-    $("#peds-mchat-result").textContent = "Questionário ainda não calculado.";
-    $("#peds-mchat-follow").hidden = true;
-    $("#peds-mchat-follow").innerHTML = "";
+    $("#peds-velocity").textContent = "Medida anterior não informada.";
+    $("#peds-summary-growth").textContent = "Crescimento não calculado";
+    resetMchatResult();
     updateAgeContext();
     updateReportAndAlerts();
   }
 
-  document.getElementById("generate-document-btn")?.addEventListener("click", (event) => {
-    if (document.body.dataset.careMode !== "pediatric") return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    generatePediatricDocument();
-  }, true);
+  const interceptPediatricAction = (id, action) => {
+    document.getElementById(id)?.addEventListener("click", (event) => {
+      if (document.body.dataset.careMode !== "pediatric") return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      action(event);
+    }, true);
+  };
 
-  document.getElementById("reset-form-btn")?.addEventListener("click", (event) => {
-    if (document.body.dataset.careMode !== "pediatric") return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    resetPediatricForm();
-  }, true);
+  interceptPediatricAction("copy-btn", async (event) => {
+    refreshPediatricDocument();
+    const button = event.currentTarget;
+    const originalHtml = button.innerHTML;
+    try {
+      await navigator.clipboard.writeText($("#peds-report").textContent);
+      button.textContent = "Copiado";
+      setTimeout(() => { button.innerHTML = originalHtml; }, 1200);
+    } catch { alert("Não foi possível copiar automaticamente. Verifique as permissões do navegador."); }
+  });
+  interceptPediatricAction("print-btn", () => { refreshPediatricDocument(); window.print(); });
+  interceptPediatricAction("pdf-btn", () => { refreshPediatricDocument(); window.print(); });
+
+  interceptPediatricAction("generate-document-btn", generatePediatricDocument);
+  interceptPediatricAction("reset-form-btn", resetPediatricForm);
 
   const newRecord = document.getElementById("new-record-btn");
   if (newRecord) newRecord.addEventListener("click", (event) => {
