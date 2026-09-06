@@ -14,6 +14,11 @@ Licenciamento e autorização devem ser verificados com os titulares antes de in
 - [MoCA — permission](https://mocacognition.com/permission)
 - [MoCA — FAQ](https://mocacognition.com/faq/)
 
+Links apresentados na interface para aplicação externa em português:
+
+- [MEEM em português — Secretaria da Saúde do Rio Grande do Sul](https://saude.rs.gov.br/upload/arquivos/201701/26142752-1330633714-mine-exame-do-estado-mental-meem.pdf)
+- [MoCA — página oficial de formulários](https://mocacognition.com/paper), selecionando o idioma `Portuguese`
+
 Este documento descreve a limitação deliberada do software. Ele não afirma que as perguntas do MEEM ou do MoCA estejam implementadas.
 
 Validação desta entrega: 39 testes automatizados aprovados e testes web/móvel de preenchimento parcial, escore zero, soma completa, correção por escolaridade, cópia, impressão, bloqueio de versão incompatível, limpeza e navegação.
