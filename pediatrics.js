@@ -538,6 +538,10 @@
   }
 
   function setMode(mode) {
+    if (mode === "aga") {
+      pediatricContent.hidden = true;
+      return;
+    }
     const pediatric = mode === "pediatric";
     pediatricContent.hidden = !pediatric;
     if (adultDesktop) {

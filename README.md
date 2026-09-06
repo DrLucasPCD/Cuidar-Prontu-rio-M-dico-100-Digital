@@ -110,3 +110,27 @@ window.CUIDAR_API_BASE = "https://southamerica-east1-cuidarmais-7d01d.cloudfunct
 ```
 
 3. Publique os arquivos estáticos normalmente no Netlify.
+
+## Avaliação Geriátrica Ampla (AGA)
+
+A opção **AGA** no seletor de acompanhamento abre o novo fluxo nas versões web e móvel. Inclui registros de funcionalidade básica e instrumental, cognição, humor, mobilidade/quedas, nutrição, sentidos, medicamentos, suporte social e plano de cuidado. O resumo completo pode ser copiado, impresso ou salvo como PDF pelo navegador; o preenchimento permanece apenas em memória.
+
+- Katz e Lawton: registros educativos adaptados, com contagem/escore descritivo, sem faixas automáticas de dependência. Não substituem aplicação padronizada.
+- GDS-15: pontuação descritiva. GDS e TUG não recebem classificação automática com cortes didáticos ainda não confirmados em fonte MS.
+- IVCF-20: registro do **total já obtido no formulário oficial**, com faixas e reavaliação da Caderneta MS 2026, p. 71. A interface não aplica os 20 itens.
+- Campos incompletos permanecem como não avaliados; resultados parciais não geram escore total. Achados já informados continuam visíveis.
+
+O plano e a divisão entre Sol, Terra e Luna estão em `docs/aga-plan.md`. `docs/aga-monitoring.md` descreve a checagem semanal preparada para as fontes do Ministério da Saúde. **A rotina remota só passa a executar depois que o workflow estiver publicado na branch padrão e o GitHub Actions tiver as permissões necessárias.** Alterações detectadas abrem revisão; não mudam regras clínicas automaticamente.
+
+```bash
+node --test tests/*.test.js
+node scripts/check-aga-sources.js
+```
+
+### MEEM e MoCA na AGA
+
+As seções cognitivas registram escores por domínio após aplicação externa do formulário autorizado: 11 categorias do MEEM e 7 domínios do MoCA Full, cada instrumento com máximo de 30 pontos. Valores ausentes impedem o total; zero é uma resposta válida. Os resultados entram no resumo local e na cópia/impressão.
+
+No MoCA Full, escore bruto e escore corrigido por escolaridade permanecem separados. A correção exige confirmação da versão e da regra aplicável. MoCA Basic, Blind e outras versões não são calculadas com os domínios do Full.
+
+**As perguntas completas, instruções e estímulos não foram incorporados.** As condições dos titulares exigem autorização para reprodução digital. A interface oferece acesso às fontes oficiais e registro de resultados, sem apresentar esse registro como aplicação do teste. Consulte `docs/cognitive-assessments.md` para referências e limitações.
