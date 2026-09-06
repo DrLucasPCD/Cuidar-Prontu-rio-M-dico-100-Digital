@@ -1,0 +1,49 @@
+name: Verificar fontes oficiais da AGA
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 8 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Consultar fontes do Ministério da Saúde
+        run: node scripts/check-aga-sources.js
+      - name: Preservar resultado de cada execução
+        uses: actions/upload-artifact@v4
+        with:
+          name: aga-source-status-${{ github.run_id }}
+          path: data/aga-source-status.json
+          retention-days: 90
+      - name: Não criar PR apenas por atualizar o relógio da consulta
+        run: |
+          if git diff --quiet -- data/aga-source-status.json; then
+            exit 0
+          fi
+          meaningful="$(git diff --unified=0 -- data/aga-source-status.json | grep -E '^[+-].*\"(status|changeDetected|clinicalReviewPending|contentHash|error|httpStatus|contentType|bytes|finalUrl|lastChangedAt)\"' || true)"
+          if [ -z "$meaningful" ]; then
+            git restore --source=HEAD -- data/aga-source-status.json
+          fi
+      - name: Abrir revisão quando houver mudança
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Atualiza verificação de fontes oficiais da AGA"
+          title: "Revisão clínica: fontes oficiais da AGA"
+          body: |
+            A verificação semanal encontrou mudança em uma fonte oficial do Ministério da Saúde ou registrou indisponibilidade.
+
+            Hashes são evidência de mudança no conteúdo e não alteram automaticamente cortes, critérios ou recomendações. Faça revisão clínica humana do arquivo `data/aga-source-status.json` e das fontes vinculadas antes de qualquer alteração no motor.
+          branch: codex/aga-source-review
+          delete-branch: true
+          add-paths: data/aga-source-status.json
