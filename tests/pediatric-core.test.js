@@ -74,9 +74,37 @@ test("pontua M-CHAT-R com itens reversos 2, 5 e 12", () => {
   const followed = Core.mchatScore(healthy, { 1: "falha", 3: "falha", 5: "passa" });
   assert.equal(followed.level, "positivo após seguimento");
   assert.equal(followed.followFailed, 2);
+  assert.equal(followed.initialScore, 3);
+  assert.equal(followed.finalScore, 2);
 
   for (let item = 1; item <= 8; item += 1) healthy[item] = [2, 5].includes(item) ? "sim" : "nao";
   assert.equal(Core.mchatScore(healthy, {}).level, "alto");
+});
+
+test("interpreta itens do Denver II pela posição na linha etária", () => {
+  assert.equal(Core.denverItemInterpretation({ result: "falhou", position: "esquerda" }), "atraso");
+  assert.equal(Core.denverItemInterpretation({ result: "falhou", position: "faixa_75_90" }), "cautela");
+  assert.equal(Core.denverItemInterpretation({ result: "passou", position: "direita" }), "avancado");
+  assert.equal(Core.denverItemInterpretation({ result: "sem_oportunidade", position: "outra" }), "sem_oportunidade");
+});
+
+test("classifica o registro do Denver II sem ocultar recusas", () => {
+  const normal = Core.denverAssessment([
+    { result: "passou", position: "outra" },
+    { result: "falhou", position: "faixa_75_90" }
+  ]);
+  assert.equal(normal.classification, "normal");
+
+  const suspect = Core.denverAssessment([
+    { result: "falhou", position: "faixa_75_90" },
+    { result: "falhou", position: "faixa_75_90" }
+  ]);
+  assert.equal(suspect.classification, "suspeito");
+
+  const untestable = Core.denverAssessment([
+    { result: "recusou", position: "esquerda" }
+  ]);
+  assert.equal(untestable.classification, "nao_testavel");
 });
 
 test("agenda o próximo acompanhamento de rotina", () => {

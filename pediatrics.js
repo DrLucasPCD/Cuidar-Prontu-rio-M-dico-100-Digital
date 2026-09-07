@@ -112,6 +112,35 @@
       </fieldset>`).join("");
   }
 
+  function denverItemMarkup(index) {
+    return `
+      <div class="peds-denver-item" data-denver-row="${index}">
+        <label>Item da folha oficial<input class="peds-denver-name" type="text" placeholder="Identifique o item aplicado"></label>
+        <label>Domínio<select class="peds-denver-domain">
+          <option value="">Selecione</option>
+          <option value="pessoal-social">Pessoal-social</option>
+          <option value="motor-fino-adaptativo">Motor fino-adaptativo</option>
+          <option value="linguagem">Linguagem</option>
+          <option value="motor-grosso">Motor grosso</option>
+        </select></label>
+        <label>Resultado<select class="peds-denver-result">
+          <option value="">Selecione</option>
+          <option value="passou">Passou</option>
+          <option value="falhou">Falhou</option>
+          <option value="recusou">Recusou</option>
+          <option value="sem_oportunidade">Sem oportunidade</option>
+        </select></label>
+        <label>Posição na linha etária<select class="peds-denver-position">
+          <option value="">Selecione</option>
+          <option value="esquerda">Totalmente à esquerda da linha</option>
+          <option value="faixa_75_90">Linha cruza a faixa de 75–90%</option>
+          <option value="outra">Outra posição cruzada pela linha</option>
+          <option value="direita">Totalmente à direita da linha</option>
+        </select></label>
+        <div class="peds-denver-row-footer"><span class="peds-denver-item-status">Item incompleto</span><button class="peds-denver-remove peds-secondary" type="button">Remover</button></div>
+      </div>`;
+  }
+
   function buildPediatricContent() {
     const section = document.createElement("section");
     section.id = "pediatric-content";
@@ -173,8 +202,17 @@
               </fieldset>
             </section>
 
+            <section class="panel card peds-card" id="peds-denver-section">
+              <div class="peds-section-heading"><span>4</span><div><h2>Denver II</h2><p>Registro estruturado da aplicação feita com a folha e o manual oficiais.</p></div></div>
+              <div id="peds-denver-eligibility" class="peds-callout peds-callout-neutral">Informe a data de nascimento para verificar a faixa de 0–6 anos.</div>
+              <div class="peds-callout peds-callout-neutral peds-denver-guide">Trace a linha etária na folha oficial, aplique os itens indicados e registre abaixo. O app não substitui o material, o treinamento nem as normas do Denver II.</div>
+              <div id="peds-denver-items">${denverItemMarkup(1)}</div>
+              <div class="peds-actions"><button id="peds-denver-add" class="peds-secondary" type="button">Adicionar item avaliado</button><button id="peds-denver-calculate" type="button">Interpretar Denver II</button></div>
+              <div id="peds-denver-result" class="peds-callout peds-callout-neutral">Denver II ainda não registrado.</div>
+            </section>
+
             <section class="panel card peds-card" id="peds-mchat-section">
-              <div class="peds-section-heading"><span>4</span><div><h2>M-CHAT-R/F</h2><p>Triagem de indicadores de TEA; não estabelece diagnóstico.</p></div></div>
+              <div class="peds-section-heading"><span>5</span><div><h2>M-CHAT-R/F</h2><p>Triagem de indicadores de TEA; não estabelece diagnóstico.</p></div></div>
               <div id="peds-mchat-eligibility" class="peds-callout peds-callout-neutral">Informe a data de nascimento para verificar a faixa de 16–30 meses.</div>
               <div id="peds-mchat-questions" class="peds-mchat-grid">${mchatMarkup()}</div>
               <p class="muted peds-mchat-credit">M-CHAT-R™ © 2009 Robins, Fein &amp; Barton. Tradução: Losapio, Siquara, Lampreia, Lázaro &amp; Pondé.</p>
@@ -184,7 +222,7 @@
             </section>
 
             <section class="panel card peds-card">
-              <div class="peds-section-heading"><span>5</span><div><h2>Risco, saúde bucal e orientações</h2><p>Registre fatores que indicam seguimento mais próximo.</p></div></div>
+              <div class="peds-section-heading"><span>6</span><div><h2>Risco, saúde bucal e orientações</h2><p>Registre fatores que indicam seguimento mais próximo.</p></div></div>
               <fieldset><legend>Fatores para consultas mais frequentes</legend><div class="peds-check-grid">
                 ${riskFactors.map(([value, label]) => `<label><input class="peds-risk" type="checkbox" value="${value}"> ${label}</label>`).join("")}
               </div></fieldset>
@@ -220,6 +258,7 @@
             <div id="peds-summary-age" class="peds-summary-item">Idade não calculada</div>
             <div id="peds-summary-growth" class="peds-summary-item">Crescimento não calculado</div>
             <div id="peds-summary-development" class="peds-summary-item">Desenvolvimento não avaliado</div>
+            <div id="peds-summary-denver" class="peds-summary-item">Denver II não avaliado</div>
             <div id="peds-summary-mchat" class="peds-summary-item">M-CHAT-R não calculado</div>
             <div id="peds-summary-return" class="peds-summary-item">Próximo retorno não calculado</div>
             <div id="peds-alerts" class="peds-alert-list"></div>
@@ -235,6 +274,8 @@
               <li><a href="https://www.who.int/tools/growth-reference-data-for-5to19-years" target="_blank" rel="noreferrer">OMS – referência 5–19 anos</a></li>
               <li><a href="https://www.gov.br/saude/pt-br/assuntos/saude-de-a-a-z/s/saude-da-crianca" target="_blank" rel="noreferrer">Ministério da Saúde – Saúde da Criança</a></li>
               <li><a href="https://www.sbp.com.br/fileadmin/user_upload/24331c-MO_Triagem_Perecoce_para_Autismo.pdf" target="_blank" rel="noreferrer">SBP – M-CHAT-R/F</a></li>
+              <li><a href="https://www.mchatscreen.com/mchat-rf/translations/" target="_blank" rel="noreferrer">M-CHAT oficial – questionário e seguimento</a></li>
+              <li><a href="https://publications.aap.org/pediatrics/article/89/1/91/57343/The-Denver-II-A-Major-Revision-and" target="_blank" rel="noreferrer">Denver II – artigo de revisão</a></li>
             </ul>
             <p class="muted">Apoio educativo. Resultados devem ser interpretados com história, exame, alimentação, contexto e trajetória.</p>
           </section>
@@ -256,7 +297,9 @@
   const dateFields = [$("#peds-dob"), $("#peds-visit-date"), $("#peds-gest-weeks")];
   let lastAssessment = null;
   let lastMchat = null;
+  let lastDenver = Core.denverAssessment([]);
   let mchatWasEligible = false;
+  let denverRowSequence = 1;
 
   const anthropometrySelectors = [
     "#peds-dob", "#peds-visit-date", "#peds-sex", "#peds-gest-weeks", "#peds-weight",
@@ -290,18 +333,35 @@
     $("#peds-mchat-eligibility").className = `peds-callout ${eligible ? "peds-callout-ok" : "peds-callout-neutral"}`;
   }
 
+  function setDenverEnabled(age) {
+    const months = age?.correctedMonths;
+    const eligible = Number.isFinite(months) && months >= 0 && months <= 72;
+    $("#peds-denver-items").querySelectorAll("input, select, button").forEach((control) => { control.disabled = !eligible; });
+    $("#peds-denver-add").disabled = !eligible;
+    $("#peds-denver-calculate").disabled = !eligible;
+    const message = !Number.isFinite(months)
+      ? "Informe a data de nascimento para verificar a faixa de 0–6 anos."
+      : eligible
+        ? `Faixa aplicável: ${Core.formatAge(age.correctedDays)}${age.correctionDays ? " de idade corrigida" : ""}.`
+        : `Fora da faixa de aplicação do Denver II: ${Core.formatAge(age.correctedDays)} (instrumento: nascimento–6 anos).`;
+    $("#peds-denver-eligibility").textContent = message;
+    $("#peds-denver-eligibility").className = `peds-callout ${eligible ? "peds-callout-ok" : "peds-callout-neutral"}`;
+  }
+
   function updateAgeContext() {
     const age = currentAge();
     if (!age) {
       $("#peds-age-box").textContent = "Informe datas válidas; a consulta não pode anteceder o nascimento.";
       $("#peds-summary-age").textContent = "Idade não calculada";
       setMchatEnabled(null);
+      setDenverEnabled(null);
       return;
     }
     const corrected = age.correctionDays ? ` | Idade corrigida: ${Core.formatAge(age.correctedDays)} (correção de ${age.correctionDays} dias)` : "";
     $("#peds-age-box").textContent = `Idade cronológica: ${Core.formatAge(age.chronologicalDays)}${corrected}`;
     $("#peds-summary-age").textContent = `Idade: ${Core.formatAge(age.chronologicalDays)}${age.correctionDays ? ` | corrigida: ${Core.formatAge(age.correctedDays)}` : ""}`;
     setMchatEnabled(age);
+    setDenverEnabled(age);
     pediatricContent.querySelectorAll("[data-milestone-age]").forEach((details) => {
       const groupAge = Number(details.dataset.milestoneAge);
       details.classList.toggle("peds-age-due", age.correctedMonths >= groupAge);
@@ -326,6 +386,59 @@
       label.textContent = missing ? `${missing} alerta${missing > 1 ? "s" : ""}` : assessed === values.length ? "completo" : assessed ? `${assessed}/${values.length}` : "não avaliado";
       label.dataset.status = missing ? "alert" : assessed === values.length ? "complete" : "partial";
     });
+  }
+
+  function collectDenverItems() {
+    return [...pediatricContent.querySelectorAll(".peds-denver-item")].map((row) => ({
+      name: row.querySelector(".peds-denver-name").value.trim(),
+      domain: row.querySelector(".peds-denver-domain").value,
+      result: row.querySelector(".peds-denver-result").value,
+      position: row.querySelector(".peds-denver-position").value
+    })).filter((item) => item.name || item.domain || item.result || item.position);
+  }
+
+  function renderDenverAssessment(assessment) {
+    const interpretationLabels = {
+      avancado: "Avançado", normal: "Normal", cautela: "Cautela", atraso: "Atraso",
+      recusa: "Recusa", recusa_cautela: "Recusa em item de cautela",
+      recusa_atraso: "Recusa em item de atraso", sem_oportunidade: "Sem oportunidade",
+      incompleto: "Item incompleto"
+    };
+    pediatricContent.querySelectorAll(".peds-denver-item").forEach((row) => {
+      const item = {
+        result: row.querySelector(".peds-denver-result").value,
+        position: row.querySelector(".peds-denver-position").value
+      };
+      const interpretation = Core.denverItemInterpretation(item);
+      const status = row.querySelector(".peds-denver-item-status");
+      status.textContent = interpretationLabels[interpretation];
+      status.dataset.status = ["atraso", "recusa_atraso"].includes(interpretation) ? "alert" : ["cautela", "recusa_cautela"].includes(interpretation) ? "caution" : "normal";
+    });
+    const box = $("#peds-denver-result");
+    if (assessment.classification === "nao_avaliado") {
+      box.textContent = "Denver II ainda não registrado.";
+      box.className = "peds-callout peds-callout-neutral";
+      $("#peds-summary-denver").textContent = "Denver II não avaliado";
+      return;
+    }
+    const counts = assessment.counts;
+    box.textContent = `${assessment.label}: ${counts.atraso} atraso(s), ${counts.cautela} cautela(s), ${counts.recusa_atraso + counts.recusa_cautela + counts.recusa} recusa(s) e ${counts.incompleto} item(ns) incompleto(s). ${assessment.action}`;
+    box.className = `peds-callout ${assessment.classification === "normal" ? "peds-callout-ok" : "peds-callout-alert"}`;
+    $("#peds-summary-denver").textContent = `Denver II: ${assessment.label} · ${assessment.completed} item(ns) registrado(s)`;
+  }
+
+  function updateDenverAssessment() {
+    lastDenver = Core.denverAssessment(collectDenverItems());
+    renderDenverAssessment(lastDenver);
+    updateReportAndAlerts();
+  }
+
+  function resetDenverAssessment() {
+    denverRowSequence = 1;
+    $("#peds-denver-items").innerHTML = denverItemMarkup(1);
+    lastDenver = Core.denverAssessment([]);
+    renderDenverAssessment(lastDenver);
+    setDenverEnabled(currentAge());
   }
 
   function collectAnswers() {
@@ -370,9 +483,9 @@
     }
     const previous = collectFollowUp();
     container.hidden = false;
-    container.innerHTML = `<h3>Entrevista de Seguimento</h3><p>Aplique somente aos itens com falha e registre o desfecho do fluxograma oficial.</p>${result.failedItems.map((item) => `
+    container.innerHTML = `<h3>Entrevista de Seguimento M-CHAT-R/F</h3><p>Aplique o fluxograma oficial somente aos itens com resposta de risco. Registre abaixo o resultado terminal de cada roteiro: 0 (passa) ou 1 (mantém risco).</p><p><a href="https://www.mchatscreen.com/mchat-rf/translations/" target="_blank" rel="noreferrer">Abrir questionário e roteiros oficiais de seguimento</a></p>${result.failedItems.map((item) => `
       <label>Item ${item}: ${mchatQuestions[item - 1]}
-        <select class="peds-follow-select" data-item="${item}"><option value="">Selecione</option><option value="passa" ${previous[item] === "passa" ? "selected" : ""}>Passa</option><option value="falha" ${previous[item] === "falha" ? "selected" : ""}>Falha</option></select>
+        <select class="peds-follow-select" data-item="${item}"><option value="">Seguimento pendente</option><option value="passa" ${previous[item] === "passa" ? "selected" : ""}>0 — Passa no roteiro oficial</option><option value="falha" ${previous[item] === "falha" ? "selected" : ""}>1 — Mantém resposta de risco</option></select>
       </label>`).join("")}`;
   }
 
@@ -382,9 +495,16 @@
     const result = Core.mchatScore(collectAnswers(), collectFollowUp());
     lastMchat = result;
     const box = $("#peds-mchat-result");
-    box.textContent = result.complete ? `Escore: ${result.score}/20 | Resultado: ${result.level}. ${result.action}` : `${result.failedItems.length} resposta(s) de risco entre os itens preenchidos. ${result.action}`;
-    box.className = `peds-callout ${result.complete && (result.score >= 3 || result.level.includes("positivo")) ? "peds-callout-alert" : result.complete ? "peds-callout-ok" : "peds-callout-neutral"}`;
-    $("#peds-summary-mchat").textContent = result.complete ? `M-CHAT-R: ${result.score}/20 (${result.level})` : "M-CHAT-R incompleto";
+    box.textContent = result.complete
+      ? result.followComplete
+        ? `Escore inicial: ${result.initialScore}/20 | Escore após seguimento: ${result.finalScore} | Resultado: ${result.level}. ${result.action}`
+        : `Escore inicial: ${result.initialScore}/20 | Resultado: ${result.level}. ${result.action}`
+      : `${result.failedItems.length} resposta(s) de risco entre os itens preenchidos. ${result.action}`;
+    const needsAttention = ["moderado", "alto", "positivo após seguimento"].includes(result.level);
+    box.className = `peds-callout ${result.complete && needsAttention ? "peds-callout-alert" : result.complete ? "peds-callout-ok" : "peds-callout-neutral"}`;
+    $("#peds-summary-mchat").textContent = result.complete
+      ? `M-CHAT-R: inicial ${result.initialScore}/20${result.followComplete ? ` · seguimento ${result.finalScore}` : ""} (${result.level})`
+      : "M-CHAT-R incompleto";
     updateReportAndAlerts();
   }
 
@@ -463,6 +583,8 @@
     if (age) {
       collectMilestones().filter((item) => item.status === "nao_atingido" && age.correctedMonths >= item.age).forEach((item) => alerts.push({ urgent: false, text: `${item.age} mês(es): ${item.label}.` }));
     }
+    if (lastDenver.classification === "suspeito") alerts.push({ urgent: true, text: "Denver II suspeito: revisar cautelas/atrasos e definir reavaliação ou encaminhamento." });
+    if (lastDenver.classification === "nao_testavel") alerts.push({ urgent: false, text: "Denver II não testável pelas recusas registradas; programar nova aplicação." });
     lastAssessment?.results.filter((item) => Math.abs(item.z) > 2).forEach((item) => alerts.push({ urgent: false, text: `${item.name}: ${item.z} Z (${item.classification}).` }));
     return alerts;
   }
@@ -485,11 +607,20 @@
     const age = currentAge();
     const selectedRisks = [...pediatricContent.querySelectorAll(".peds-risk:checked")].map((item) => item.parentElement.textContent.trim());
     const assessedMilestones = collectMilestones().filter((item) => item.status);
+    const denverItems = collectDenverItems();
     const dentalSymptoms = [...pediatricContent.querySelectorAll(".peds-dental-symptom:checked")].map((item) => item.value);
     const statusLabels = { atingido: "atingido/presente", nao_atingido: "não atingido/ausente", nao_observado: "não observado", nao_aplicavel: "não aplicável" };
+    const denverResultLabels = { passou: "passou", falhou: "falhou", recusou: "recusou", sem_oportunidade: "sem oportunidade" };
+    const denverInterpretationLabels = { avancado: "avançado", normal: "normal", cautela: "cautela", atraso: "atraso", recusa: "recusa", recusa_cautela: "recusa em item de cautela", recusa_atraso: "recusa em item de atraso", sem_oportunidade: "sem oportunidade", incompleto: "incompleto" };
     const growthLines = lastAssessment?.results.length ? lastAssessment.results.map((item) => `- ${item.name}: Z ${item.z > 0 ? "+" : ""}${item.z}; percentil ${item.percentile}; ${item.classification}`) : ["- Não calculado."];
     const milestoneLines = assessedMilestones.length ? assessedMilestones.map((item) => `- ${item.age} mês(es) | ${item.domain}: ${item.label} — ${statusLabels[item.status]}`) : ["- Não avaliados."];
-    const mchatLine = lastMchat?.complete ? `Escore ${lastMchat.score}/20; ${lastMchat.level}. ${lastMchat.action}` : "Não aplicado ou incompleto.";
+    const denverLines = denverItems.length ? [
+      `Classificação: ${lastDenver.label}. ${lastDenver.action || ""}`,
+      ...denverItems.map((item) => `- ${item.name || "Item não identificado"} | ${item.domain || "domínio não informado"}: ${denverResultLabels[item.result] || "resultado não informado"}; ${denverInterpretationLabels[Core.denverItemInterpretation(item)]}.`)
+    ] : ["- Não registrado."];
+    const mchatLine = lastMchat?.complete
+      ? `Escore inicial ${lastMchat.initialScore}/20${lastMchat.followComplete ? `; escore após seguimento ${lastMchat.finalScore}` : ""}; ${lastMchat.level}. ${lastMchat.action}`
+      : "Não aplicado ou incompleto.";
     const notes = $("#peds-notes").value.trim() || "Sem observações adicionais.";
     const choiceText = (value) => ({ nao_informado: "não informado", nao: "não", sim: "sim", excepcional: "excepcional, breve e acompanhada", frequente: "frequente/diária" }[value] || value || "não informado");
     return [
@@ -499,7 +630,7 @@
       `Sexo usado na referência OMS: ${$("#peds-sex").value || "não informado"}`, `Idade gestacional: ${$("#peds-gest-weeks").value ? `${$("#peds-gest-weeks").value} semanas` : "não informada"}`, "",
       "ANTROPOMETRIA", `Peso: ${$("#peds-weight").value || "não informado"} kg`, `Comprimento/estatura: ${$("#peds-height").value || "não informado"} cm (${$("#peds-height-method").value})`,
       `Perímetro cefálico: ${$("#peds-head").value || "não informado"} cm`, `IMC: ${Number.isFinite(lastAssessment?.bmi) ? `${lastAssessment.bmi.toFixed(1).replace(".", ",")} kg/m²` : "não calculado"}`,
-      ...(lastAssessment?.techniqueNote ? [lastAssessment.techniqueNote] : []), ...growthLines, "", "DESENVOLVIMENTO", ...milestoneLines, "",
+      ...(lastAssessment?.techniqueNote ? [lastAssessment.techniqueNote] : []), ...growthLines, "", "DESENVOLVIMENTO", ...milestoneLines, "", "DENVER II", ...denverLines, "",
       "M-CHAT-R/F", mchatLine, "", "FATORES PARA SEGUIMENTO MAIS PRÓXIMO", selectedRisks.length ? selectedRisks.map((item) => `- ${item}`).join("\n") : "- Nenhum marcado.", "",
       "SINAIS DE ALERTA", alerts.length ? alerts.map((item) => `- ${item.text}`).join("\n") : "- Nenhum sinal automático marcado.", "", "SAÚDE BUCAL",
       `Dentes presentes: ${choiceText($("#peds-teeth").value)}; primeira erupção: ${$("#peds-eruption-age").value ? `${$("#peds-eruption-age").value} meses` : "não informada"}; número aproximado: ${$("#peds-tooth-count").value || "não informado"}.`,
@@ -573,10 +704,31 @@
   });
   pediatricContent.addEventListener("change", (event) => {
     if (event.target.classList.contains("peds-milestone") || event.target.matches("input[type=checkbox], #peds-teeth, #peds-oral-hygiene, #peds-screens, #peds-walker, #peds-eruption-age, #peds-tooth-count")) updateReportAndAlerts();
+    if (event.target.matches(".peds-denver-domain, .peds-denver-result, .peds-denver-position")) updateDenverAssessment();
     if (event.target.classList.contains("peds-follow-select")) calculateMchat();
     if (event.target.matches('#peds-mchat-questions input[type="radio"]')) {
       resetMchatResult();
       updateReportAndAlerts();
+    }
+  });
+  pediatricContent.addEventListener("input", (event) => {
+    if (event.target.classList.contains("peds-denver-name")) updateDenverAssessment();
+  });
+  pediatricContent.addEventListener("click", (event) => {
+    if (event.target.id === "peds-denver-add") {
+      denverRowSequence += 1;
+      $("#peds-denver-items").insertAdjacentHTML("beforeend", denverItemMarkup(denverRowSequence));
+      setDenverEnabled(currentAge());
+    }
+    if (event.target.id === "peds-denver-calculate") updateDenverAssessment();
+    if (event.target.classList.contains("peds-denver-remove")) {
+      event.target.closest(".peds-denver-item").remove();
+      if (!pediatricContent.querySelector(".peds-denver-item")) {
+        denverRowSequence += 1;
+        $("#peds-denver-items").innerHTML = denverItemMarkup(denverRowSequence);
+      }
+      setDenverEnabled(currentAge());
+      updateDenverAssessment();
     }
   });
   $("#peds-notes").addEventListener("input", updateReportAndAlerts);
@@ -602,6 +754,7 @@
     $("#peds-visit-date").value = today;
     lastAssessment = null;
     lastMchat = null;
+    lastDenver = Core.denverAssessment([]);
     mchatWasEligible = false;
     delete $("#peds-height-method").dataset.userChanged;
     pediatricContent.querySelectorAll("details").forEach((details) => { details.open = false; });
@@ -609,6 +762,7 @@
     $("#peds-z-chart").innerHTML = "";
     $("#peds-velocity").textContent = "Medida anterior não informada.";
     $("#peds-summary-growth").textContent = "Crescimento não calculado";
+    resetDenverAssessment();
     resetMchatResult();
     updateAgeContext();
     updateReportAndAlerts();
@@ -651,5 +805,5 @@
   setMode(document.querySelector('input[name="care-mode"]:checked')?.value || "adult");
   updateAgeContext();
   updateReportAndAlerts();
-  window.PediatricModule = { calculateAssessment, calculateMchat, setMode, milestones, mchatQuestions };
+  window.PediatricModule = { calculateAssessment, calculateMchat, updateDenverAssessment, setMode, milestones, mchatQuestions };
 })();

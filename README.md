@@ -34,12 +34,13 @@ O seletor **Tipo de acompanhamento** abre um fluxo independente de puericultura 
 - conversão de 0,7 cm quando a técnica de comprimento/estatura não corresponde à faixa etária;
 - velocidade de crescimento quando há uma medida anterior com data;
 - marcos do desenvolvimento de RN a 18 meses nos domínios social, comunicação, cognição e motricidade;
+- registro da aplicação do Denver II, com itens informados a partir da folha oficial, interpretação de cautelas, atrasos e recusas e classificação geral;
 - sinais de alerta, fatores para consultas mais frequentes e lembrete do próximo acompanhamento;
-- M-CHAT-R/F com 20 itens, algoritmo de risco e registro da Entrevista de Seguimento;
+- M-CHAT-R/F com 20 itens, algoritmo de risco, link para os roteiros oficiais e registro separado dos escores inicial e após a Entrevista de Seguimento;
 - desenvolvimento dentário, higiene bucal, exposição a telas e uso de andador;
 - resumo pediátrico local para cópia, impressão ou PDF.
 
-Os arquivos `data/who-growth-data.js`, `pediatric-core.js` e `pediatrics.js` concentram, respectivamente, as tabelas oficiais, os cálculos puros e a interface. O módulo é educativo: triagem não é diagnóstico e os resultados devem ser integrados à história, ao exame e à trajetória da criança.
+Os arquivos `data/who-growth-data.js`, `pediatric-core.js` e `pediatrics.js` concentram, respectivamente, as tabelas oficiais, os cálculos puros e a interface. O Denver II exige a folha, o manual e a capacitação correspondentes; o app registra os resultados sem reproduzir os 125 itens ou as normas proprietárias. O módulo é educativo: triagem não é diagnóstico e os resultados devem ser integrados à história, ao exame e à trajetória da criança.
 
 Para executar os testes do motor pediátrico:
 

@@ -198,16 +198,67 @@
     if (!complete) return { complete, score: null, failedItems, level: "incompleto", action: "Responda aos 20 itens." };
     const score = failedItems.length;
     let level = score <= 2 ? "baixo" : score <= 7 ? "moderado" : "alto";
-    let action = score <= 2 ? "Manter vigilância; se menor de 24 meses, repetir aos 24 meses." : score <= 7 ? "Aplicar a Entrevista de Seguimento aos itens com falha." : "Encaminhar para avaliação diagnóstica e avaliação da necessidade de intervenção.";
+    let action = score <= 2 ? "Manter vigilância; se menor de 24 meses, repetir aos 24 meses." : score <= 7 ? "Aplicar a Entrevista de Seguimento aos itens com resposta de risco." : "Encaminhar imediatamente para avaliação diagnóstica e avaliação de elegibilidade para intervenção precoce.";
     const followFailed = failedItems.filter((item) => followUp?.[item] === "falha").length;
     const followComplete = score >= 3 && score <= 7 && failedItems.every((item) => ["passa", "falha"].includes(followUp?.[item]));
     if (followComplete) {
       level = followFailed >= 2 ? "positivo após seguimento" : "negativo após seguimento";
       action = followFailed >= 2
-        ? "Encaminhar para avaliação diagnóstica e avaliação da necessidade de intervenção."
+        ? "Encaminhar imediatamente para avaliação diagnóstica e avaliação de elegibilidade para intervenção precoce."
         : "Manter vigilância e repetir a triagem em consultas futuras, se indicado.";
     }
-    return { complete, score, failedItems, level, action, followFailed, followComplete };
+    return {
+      complete,
+      score,
+      initialScore: score,
+      finalScore: followComplete ? followFailed : null,
+      failedItems,
+      level,
+      action,
+      followFailed,
+      followComplete
+    };
+  }
+
+  function denverItemInterpretation(item) {
+    const result = item?.result;
+    const position = item?.position;
+    if (!["passou", "falhou", "recusou", "sem_oportunidade"].includes(result)) return "incompleto";
+    if (result === "sem_oportunidade") return "sem_oportunidade";
+    if (!["esquerda", "faixa_75_90", "outra", "direita"].includes(position)) return "incompleto";
+    if (result === "passou") return position === "direita" ? "avancado" : "normal";
+    if (result === "falhou") {
+      if (position === "esquerda") return "atraso";
+      if (position === "faixa_75_90") return "cautela";
+      return "normal";
+    }
+    if (position === "esquerda") return "recusa_atraso";
+    if (position === "faixa_75_90") return "recusa_cautela";
+    return "recusa";
+  }
+
+  function denverAssessment(items) {
+    const counts = {
+      avancado: 0, normal: 0, cautela: 0, atraso: 0,
+      recusa: 0, recusa_cautela: 0, recusa_atraso: 0,
+      sem_oportunidade: 0, incompleto: 0
+    };
+    const assessedItems = Array.isArray(items) ? items : [];
+    assessedItems.forEach((item) => { counts[denverItemInterpretation(item)] += 1; });
+    const completed = assessedItems.length - counts.incompleto;
+    if (!completed) {
+      return { classification: "nao_avaliado", label: "Não avaliado", counts, completed, total: assessedItems.length };
+    }
+    const untestable = counts.recusa_atraso >= 1 || counts.recusa_cautela >= 2;
+    const suspect = counts.atraso >= 1 || counts.cautela >= 2;
+    const classification = untestable ? "nao_testavel" : suspect ? "suspeito" : "normal";
+    const labels = { normal: "Normal", suspeito: "Suspeito", nao_testavel: "Não testável" };
+    const actions = {
+      normal: "Manter vigilância do desenvolvimento conforme o contexto clínico.",
+      suspeito: "Reavaliar e considerar investigação ou encaminhamento conforme história, exame e rede local.",
+      nao_testavel: "Repetir a aplicação quando possível e interpretar as recusas no contexto clínico."
+    };
+    return { classification, label: labels[classification], action: actions[classification], counts, completed, total: assessedItems.length };
   }
 
   function nextVisit(ageDays) {
@@ -217,7 +268,7 @@
     return next ? (next < 1 ? "1ª semana de vida" : `${next} meses`) : "consulta anual, próxima ao mês de aniversário, ou antes conforme necessidade";
   }
 
-  const api = { ageDetails, formatAge, evaluateAnthropometry, growthVelocity, mchatScore, nextVisit, percentile, classification, computeZ };
+  const api = { ageDetails, formatAge, evaluateAnthropometry, growthVelocity, mchatScore, denverItemInterpretation, denverAssessment, nextVisit, percentile, classification, computeZ };
   root.PediatricCore = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : window);

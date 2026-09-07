@@ -350,6 +350,43 @@
   margin-top: 14px;
 }
 
+.peds-denver-guide,
+#peds-denver-items {
+  margin-top: 12px;
+}
+
+#peds-denver-items {
+  display: grid;
+  gap: 10px;
+}
+
+.peds-denver-item {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  border: 1px solid #dbe4ea;
+  border-radius: 12px;
+  background: #fbfdfe;
+  padding: 11px;
+}
+
+.peds-denver-row-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.peds-denver-item-status {
+  color: #526a7d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.peds-denver-item-status[data-status="caution"] { color: #9a5c13; }
+.peds-denver-item-status[data-status="alert"] { color: #a2382f; }
+
 .peds-check-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -420,6 +457,11 @@
 
 .peds-follow label {
   margin-top: 8px;
+}
+
+.peds-follow a {
+  color: #0b6ea8;
+  font-weight: 700;
 }
 
 .peds-oral-grid {
@@ -513,6 +555,8 @@ button:disabled {
   .app-content > .pediatric-content { padding: 0; }
   .peds-hero-card { align-items: stretch; flex-direction: column; }
   .peds-grid, .peds-result-grid, .peds-check-grid, .peds-mchat-grid { grid-template-columns: 1fr; }
+  .peds-denver-item { grid-template-columns: 1fr; }
+  .peds-denver-row-footer { grid-column: 1; }
   .peds-milestone-row { grid-template-columns: 1fr; }
   .peds-milestone-row > span { align-items: flex-start; flex-direction: column; }
 }
