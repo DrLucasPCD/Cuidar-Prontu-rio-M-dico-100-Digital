@@ -767,14 +767,14 @@ function renderRecommendations(items) {
   });
 }
 
-form.addEventListener("submit", async (event) => {
+form.addEventListener("submit", (event) => {
   event.preventDefault();
   const sex = document.getElementById("sex").value;
   const age = Number(document.getElementById("age").value);
   const weight = Number(document.getElementById("weight").value);
   const height = Number(document.getElementById("height").value);
   const cep = cepInput?.value || "";
-  await resolveTerritoryForCep(cep);
+  updateTerritoryBox();
   const physicalActivity = physicalActivityInput?.value || "";
   const isBlack = Boolean(blackInput?.checked);
   const isPcd = Boolean(pcdInput?.checked);
