@@ -135,3 +135,12 @@ As seções cognitivas registram escores por domínio após aplicação externa 
 No MoCA Full, escore bruto e escore corrigido por escolaridade permanecem separados. A correção exige confirmação da versão e da regra aplicável. MoCA Basic, Blind e outras versões não são calculadas com os domínios do Full.
 
 **As perguntas completas, instruções e estímulos não foram incorporados.** As condições dos titulares exigem autorização para reprodução digital. A interface oferece acesso às fontes oficiais e registro de resultados, sem apresentar esse registro como aplicação do teste. Consulte `docs/cognitive-assessments.md` para referências e limitações.
+
+
+## Revisão cardiovascular de pesquisa — setembro de 2026
+
+O módulo adulto usa PREVENT simplificado de 10 anos (S12A) e cenários sociais SDI (S12D). A contribuição social é uma análise hipotética com os coeficientes publicados, não uma conversão de CEP brasileiro. Não há validação preditiva local nem base longitudinal de desfechos. Os pontos territoriais antigos não são utilizados nas interfaces.
+
+A correspondência territorial exata usa CNEFE/IBGE 2022 de Recife e informa CEPs multissetoriais. Dados antigos de infraestrutura permanecem como arquivos legados, sem carregamento pelo app.
+
+Consulte `docs/ficha-tecnica-cuidar-plus-revisada.md` para métodos, limites, fontes, proveniência dos coeficientes e plano de validação. Testes: `node --test tests/*.test.js`.

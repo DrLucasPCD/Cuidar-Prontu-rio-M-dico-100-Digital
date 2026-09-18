@@ -42,25 +42,6 @@ const pcdInput = document.getElementById("is-pcd");
 const sexualOrientationInput = document.getElementById("sexual-orientation");
 const genderIdentityInput = document.getElementById("gender-identity");
 const sexualDebutInput = document.getElementById("sexual-debut");
-const cepSocioDb = window.CEP_SOCIO_DB && Array.isArray(window.CEP_SOCIO_DB.entries)
-  ? window.CEP_SOCIO_DB.entries
-  : [];
-const cepSocioByCep = new Map(
-  cepSocioDb
-    .filter((entry) => entry.cep)
-    .map((entry) => [String(entry.cep).replace(/\D/g, ""), entry])
-);
-const cepSocioByPrefix5 = buildCepPrefixIndex(cepSocioDb);
-const peMunicipalDb = window.PE_MUNICIPAL_TERRITORY_DB && Array.isArray(window.PE_MUNICIPAL_TERRITORY_DB.entries)
-  ? window.PE_MUNICIPAL_TERRITORY_DB
-  : { entries: [] };
-const peMunicipalByIbge = new Map(
-  peMunicipalDb.entries.map((entry) => [String(entry.ibge || ""), entry])
-);
-const API_BASE = (window.CUIDAR_API_BASE || "/api").replace(/\/$/, "");
-let cepLookupTimer = null;
-let cepResolutionState = { cep: "", status: "idle", data: null, error: "" };
-
 const BASE_CATALOG = [
   { system: "CID-11", code: "5A11", name: "Diabetes mellitus tipo 2" },
   { system: "CID-11", code: "5A10", name: "Diabetes mellitus tipo 1" },
@@ -342,28 +323,9 @@ function physicalActivityLabel(value) {
   return labels[value] || "não informada";
 }
 
-function physicalActivityRiskPoints(value) {
-  if (value === "regular") return -1;
-  if (value === "insuficiente") return 1;
-  if (value === "sedentario") return 2;
-  return 0;
-}
-
 function getNumberFromInput(input) {
   const value = Number(input?.value);
   return Number.isFinite(value) && value > 0 ? value : null;
-}
-
-function classifyCastelliOne(value) {
-  if (value < 3.5) return { level: "favorável", points: 0 };
-  if (value <= 5) return { level: "intermediário", points: 1 };
-  return { level: "alto", points: 2 };
-}
-
-function classifyCastelliTwo(value) {
-  if (value < 2.5) return { level: "favorável", points: 0 };
-  if (value <= 3.5) return { level: "intermediário", points: 1 };
-  return { level: "alto", points: 2 };
 }
 
 function calcCastelliIndices() {
@@ -384,9 +346,6 @@ function calcCastelliIndices() {
 
   const castelli1 = total / hdl;
   const castelli2 = ldl / hdl;
-  const castelli1Class = classifyCastelliOne(castelli1);
-  const castelli2Class = classifyCastelliTwo(castelli2);
-  const lipidPoints = Math.min(3, castelli1Class.points + castelli2Class.points);
 
   return {
     complete: true,
@@ -395,11 +354,9 @@ function calcCastelliIndices() {
     ldl,
     castelli1,
     castelli2,
-    castelli1Class,
-    castelli2Class,
-    cardioPoints: lipidPoints,
-    strokePoints: Math.min(2, lipidPoints),
-    summary: `Castelli I: ${castelli1.toFixed(2)} (${castelli1Class.level}) | Castelli II: ${castelli2.toFixed(2)} (${castelli2Class.level})`
+    cardioPoints: 0,
+    strokePoints: 0,
+    summary: `Castelli I: ${castelli1.toFixed(2)} (descritivo) | Castelli II: ${castelli2.toFixed(2)} (descritivo)`
   };
 }
 
@@ -408,213 +365,15 @@ function formatLipidReportLine(castelliData) {
   return `Colesterol total: ${castelliData.total} mg/dL | HDL: ${castelliData.hdl} mg/dL | LDL: ${castelliData.ldl} mg/dL`;
 }
 
-function classifyTerritorialIndex(index) {
-  if (index >= 85) return { points: 0, category: "baixa vulnerabilidade territorial" };
-  if (index >= 70) return { points: 1, category: "vulnerabilidade territorial moderada-baixa" };
-  if (index >= 55) return { points: 2, category: "vulnerabilidade territorial moderada-alta" };
-  return { points: 3, category: "alta vulnerabilidade territorial" };
-}
-
-function buildCepPrefixIndex(entries) {
-  const groups = new Map();
-  for (const entry of entries) {
-    const cep = String(entry.cep || "").replace(/\D/g, "");
-    if (cep.length !== 8) continue;
-    const prefix = cep.slice(0, 5);
-    const group = groups.get(prefix) || {
-      prefix,
-      count: 0,
-      faces: 0,
-      indexSum: 0,
-      bairros: new Map()
-    };
-    group.count += 1;
-    group.faces += Number(entry.faces || 0);
-    group.indexSum += Number(entry.indiceSocioeconomico || 0);
-    group.bairros.set(entry.bairro, (group.bairros.get(entry.bairro) || 0) + 1);
-    groups.set(prefix, group);
-  }
-
-  const index = new Map();
-  for (const group of groups.values()) {
-    const indiceSocioeconomico = Math.round(group.indexSum / group.count);
-    const classification = classifyTerritorialIndex(indiceSocioeconomico);
-    const bairros = [...group.bairros.entries()].sort((a, b) => b[1] - a[1]);
-    index.set(group.prefix, {
-      cepPrefix: group.prefix,
-      bairro: bairros[0]?.[0] || "Recife",
-      faces: group.faces,
-      relatedCeps: group.count,
-      indiceSocioeconomico,
-      privacaoTerritorial: 100 - indiceSocioeconomico,
-      category: classification.category,
-      points: classification.points,
-      approximate: true
-    });
-  }
-  return index;
-}
-
-function getSocioeconomicByCep(cepRaw) {
-  const digits = sanitizeCep(cepRaw);
-  if (digits.length !== 8) {
-    return {
-      found: false,
-      indiceSocioeconomico: null,
-      points: 0,
-      description: "CEP não informado ou inválido (sem ajuste territorial no risco)."
-    };
-  }
-  if (digits === "50000000") {
-    return {
-      found: false,
-      indiceSocioeconomico: null,
-      points: 0,
-      description: "CEP 50000-000 é genérico na base oficial do Recife e foi excluído do ajuste territorial."
-    };
-  }
-
-  const exactMatch = cepSocioByCep.get(digits);
-  const prefixMatch = cepSocioByPrefix5.get(digits.slice(0, 5));
-  const match = exactMatch || prefixMatch;
-
-  if (!match && cepResolutionState.cep === digits && cepResolutionState.status === "resolved") {
-    const resolution = cepResolutionState.data;
-    if (resolution.uf !== "PE") {
-      return {
-        found: false,
-        indiceSocioeconomico: null,
-        points: 0,
-        precision: "fora_da_area",
-        description: `CEP ${formatCep(digits)} localizado em ${resolution.municipality}/${resolution.uf}, fora da cobertura de Pernambuco (sem ajuste territorial).`
-      };
-    }
-
-    const municipal = peMunicipalByIbge.get(String(resolution.municipalityIbge || ""));
-    if (!municipal) {
-      return {
-        found: false,
-        indiceSocioeconomico: null,
-        points: 0,
-        precision: "indisponivel",
-        description: `CEP ${formatCep(digits)} localizado em ${resolution.municipality}/PE, mas sem indicador municipal disponível (sem ajuste territorial).`
-      };
-    }
-
-    return {
-      found: true,
-      indiceSocioeconomico: Number(municipal.indiceSocioeconomico),
-      privacaoTerritorial: Number(municipal.privacaoTerritorial),
-      category: municipal.category,
-      points: Number(municipal.points),
-      components: municipal.indicators,
-      source: peMunicipalDb.source,
-      sourceUrl: peMunicipalDb.sourceUrl,
-      sourceReference: peMunicipalDb.referenceYear,
-      precision: "municipal",
-      description: `CEP ${formatCep(digits)} - ${resolution.municipality}/PE, índice territorial municipal: ${municipal.indiceSocioeconomico}/100 (${municipal.category}; Censo ${peMunicipalDb.referenceYear}, precisão municipal).`
-    };
-  }
-
-  if (!match && cepResolutionState.cep === digits && cepResolutionState.status === "loading") {
-    return {
-      found: false,
-      indiceSocioeconomico: null,
-      points: 0,
-      precision: "carregando",
-      description: `CEP ${formatCep(digits)} em consulta territorial (o risco será atualizado automaticamente).`
-    };
-  }
-
-  if (!match && cepResolutionState.cep === digits && cepResolutionState.status === "error") {
-    return {
-      found: false,
-      indiceSocioeconomico: null,
-      points: 0,
-      precision: "indisponivel",
-      description: `${cepResolutionState.error} Sem ajuste territorial no risco.`
-    };
-  }
-
-  if (!match) {
-    return {
-      found: false,
-      indiceSocioeconomico: null,
-      points: 0,
-      description: `CEP ${formatCep(digits)} sem correspondência na base oficial de logradouros do Recife (sem ajuste territorial).`
-    };
-  }
-
-  const index = Number(match.indiceSocioeconomico);
-  const classification = Number.isFinite(Number(match.points))
-    ? { points: Number(match.points), category: match.category }
-    : classifyTerritorialIndex(index);
-  const location = exactMatch
-    ? `CEP ${formatCep(digits)} - ${match.bairro}, Recife/PE`
-    : `CEP ${formatCep(digits)} aproximado pelo prefixo ${match.cepPrefix} (${match.relatedCeps} CEPs oficiais relacionados) - ${match.bairro}, Recife/PE`;
-
-  return {
-    found: true,
-    indiceSocioeconomico: index,
-    privacaoTerritorial: match.privacaoTerritorial,
-    category: classification.category,
-    points: classification.points,
-    components: match.components || null,
-    source: window.CEP_SOCIO_DB?.source || "Base oficial local",
-    sourceUrl: window.CEP_SOCIO_DB?.sourceUrl || "",
-    sourceReference: window.CEP_SOCIO_DB?.sourceUpdatedAt || "",
-    precision: exactMatch ? "cep_exato" : "prefixo_cep",
-    description: `${location}, índice socioeconômico-territorial: ${index}/100 (${classification.category}; precisão ${exactMatch ? "por CEP" : "aproximada por prefixo"}).`
-  };
-}
-
-async function resolveTerritoryForCep(rawCep) {
+function getSocioeconomicByCep(rawCep) {
   const digits = sanitizeCep(rawCep);
-  if (digits.length !== 8) {
-    cepResolutionState = { cep: digits, status: "idle", data: null, error: "" };
-    return;
-  }
-
-  if (cepSocioByCep.has(digits) || cepSocioByPrefix5.has(digits.slice(0, 5))) {
-    cepResolutionState = { cep: digits, status: "local", data: null, error: "" };
-    return;
-  }
-
-  if (cepResolutionState.cep === digits && ["loading", "resolved"].includes(cepResolutionState.status)) {
-    return;
-  }
-
-  cepResolutionState = { cep: digits, status: "loading", data: null, error: "" };
-  updateReportPreview();
-  try {
-    const response = await fetch(`${API_BASE}/territory/cep/${encodeURIComponent(digits)}`, {
-      headers: { Accept: "application/json" }
-    });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "Não foi possível consultar o CEP.");
-    if (sanitizeCep(cepInput?.value) !== digits) return;
-    cepResolutionState = { cep: digits, status: "resolved", data: payload, error: "" };
-  } catch (error) {
-    if (sanitizeCep(cepInput?.value) !== digits) return;
-    cepResolutionState = {
-      cep: digits,
-      status: "error",
-      data: null,
-      error: error.message || "Consulta territorial indisponível."
-    };
-  }
-  updateReportPreview();
+  const entries = window.RECIFE_CEP_SECTORS?.entries[digits];
+  if (!entries) return {found:false, points:0, precision:"unavailable", description:"CEP sem correspondência exata no CNEFE Recife 2022. Vulnerabilidade desconhecida; não equivale a baixo risco."};
+  const counts = Object.values(entries), sectors = counts.length, addresses = counts.reduce((a,b)=>a+b,0);
+  return {found:true, points:0, precision:"cep-cnefe", description:`CNEFE/IBGE 2022: ${addresses} endereços de domicílios particulares em ${sectors} código(s) setorial(is) original(is) para este CEP. ${sectors > 1 ? "CEP abrange múltiplos setores; não permite atribuir um único nível de privação." : "Código setorial requer harmonização com a malha do índice de privação."} Nenhum percentual de risco é atribuído ao CEP.`};
 }
 
-function scheduleTerritoryLookup(rawCep) {
-  clearTimeout(cepLookupTimer);
-  const digits = sanitizeCep(rawCep);
-  if (digits.length !== 8) {
-    cepResolutionState = { cep: digits, status: "idle", data: null, error: "" };
-    return;
-  }
-  cepLookupTimer = setTimeout(() => resolveTerritoryForCep(digits), 450);
-}
+function scheduleTerritoryLookup() { updateTerritoryBox(); }
 
 function updateTerritoryBox() {
   if (!territoryBox) return;
@@ -629,72 +388,32 @@ function classifyRisk(score, lowLimit, moderateLimit) {
   return "alto";
 }
 
-function calcCardioAndStrokeRisk({ sex, age, imc, comorb, cep, isBlack, isPcd, sexualOrientation, genderIdentity, physicalActivity, castelliData }) {
-  const socioeconomicData = getSocioeconomicByCep(cep);
-  const isSexualMinority = sexualOrientation && sexualOrientation !== "heterossexual";
-  const hasGenderMinorityVulnerability = ["mulher_trans", "homem_trans", "travesti", "nao_binaria", "outra"].includes(genderIdentity);
-  const activityPoints = physicalActivityRiskPoints(physicalActivity);
-  const lipidData = castelliData || calcCastelliIndices();
-
-  let cardioScore = 0;
-  if (age >= 60) cardioScore += 4;
-  else if (age >= 50) cardioScore += 3;
-  else if (age >= 40) cardioScore += 2;
-  else if (age >= 30) cardioScore += 1;
-  if (sex === "masculino") cardioScore += 1;
-  if (comorb.includes("has")) cardioScore += 3;
-  if (comorb.includes("dm2")) cardioScore += 3;
-  if (comorb.includes("tabagismo")) cardioScore += 2;
-  if (comorb.includes("dcv")) cardioScore += 2;
-  if (comorb.includes("drf")) cardioScore += 1;
-  if (imc >= 30) cardioScore += 2;
-  else if (imc >= 25) cardioScore += 1;
-  if (isBlack) cardioScore += 1;
-  if (isPcd) cardioScore += 1;
-  if (isSexualMinority) cardioScore += 1;
-  if (hasGenderMinorityVulnerability) cardioScore += 1;
-  cardioScore += socioeconomicData.points;
-  cardioScore += activityPoints;
-  cardioScore += lipidData.cardioPoints;
-
-  let strokeScore = 0;
-  if (age >= 65) strokeScore += 4;
-  else if (age >= 55) strokeScore += 3;
-  else if (age >= 45) strokeScore += 2;
-  else if (age >= 35) strokeScore += 1;
-  if (comorb.includes("has")) strokeScore += 4;
-  if (comorb.includes("dm2")) strokeScore += 2;
-  if (comorb.includes("tabagismo")) strokeScore += 2;
-  if (comorb.includes("dcv")) strokeScore += 3;
-  if (imc >= 30) strokeScore += 1;
-  if (isBlack) strokeScore += 1;
-  if (isPcd) strokeScore += 1;
-  if (isSexualMinority) strokeScore += 1;
-  if (hasGenderMinorityVulnerability) strokeScore += 1;
-  strokeScore += socioeconomicData.points;
-  strokeScore += activityPoints;
-  strokeScore += lipidData.strokePoints;
-  cardioScore = Math.max(0, cardioScore);
-  strokeScore = Math.max(0, strokeScore);
-
-  const cardioLevel = classifyRisk(cardioScore, 4, 8);
-  const strokeLevel = classifyRisk(strokeScore, 4, 8);
-  const cardioEstimate = cardioLevel === "baixo" ? "<10%" : cardioLevel === "moderado" ? "10-19%" : ">=20%";
-  const strokeEstimate = strokeLevel === "baixo" ? "<5%" : strokeLevel === "moderado" ? "5-9%" : ">=10%";
-
-  return {
-    socioeconomicData,
-    cardio: { score: cardioScore, level: cardioLevel, estimate: cardioEstimate },
-    stroke: { score: strokeScore, level: strokeLevel, estimate: strokeEstimate }
-  };
+function readPreventInput(sex, age, imc) {
+  const number = id => { const v = document.getElementById(id)?.value; return v ? Number(v) : NaN; };
+  const boolean = id => { const v = document.getElementById(id)?.value; return v === "sim" ? true : v === "nao" ? false : null; };
+  return {sex, age, bmi:imc, sbp:number("prevent-sbp"), egfr:number("prevent-egfr"),
+    totalCholesterol:number("total-cholesterol"), hdl:number("hdl-cholesterol"),
+    diabetes:boolean("prevent-diabetes"), smoking:boolean("prevent-smoking"),
+    priorCvd:boolean("prevent-prior-cvd"), bpTreatment:boolean("prevent-bp-treatment"), statin:boolean("prevent-statin")};
 }
-
+function calcCardioAndStrokeRisk({sex, age, imc, cep}) {
+  const input = readPreventInput(sex, age, imc);
+  const result = CardiovascularCore.calculate(input);
+  const scenario = document.getElementById("prevent-social-scenario")?.value;
+  const social = scenario ? CardiovascularCore.socialScenarios(input).find(x => x.sdiDecile === Number(scenario)) : null;
+  return {result, social, socioeconomicData:getSocioeconomicByCep(cep)};
+}
 function formatRiskBoxMessage(riskData) {
-  if (!riskData) return "Risco cardiovascular e risco de AVC serão calculados após gerar recomendações.";
-  const socioeconomicText = riskData.socioeconomicData.found
-    ? ` | Socioeconômico: ${riskData.socioeconomicData.indiceSocioeconomico}/100 (${riskData.socioeconomicData.category})`
-    : "";
-  return `Risco cardiovascular: ${riskData.cardio.level} (${riskData.cardio.estimate}) | Risco AVC: ${riskData.stroke.level} (${riskData.stroke.estimate})${socioeconomicText}`;
+  if (!riskData) return "PREVENT: informe os dados clínicos para calcular o risco em 10 anos.";
+  const r = riskData.result;
+  if (!r.ok) return "PREVENT não calculado: " + r.errors.join("; ") + ".";
+  const f = n => n.toFixed(2).replace(".", ",");
+  let message = `PREVENT base — risco em 10 anos: DCV total ${f(r.risks.total_cvd)}%; ASCVD ${f(r.risks.ascvd)}%; insuficiência cardíaca ${f(r.risks.heart_failure)}%; AVC ${f(r.risks.stroke)}%. Os desfechos se sobrepõem e não devem ser somados. `;
+  if (riskData.social) {
+    const t = riskData.social;
+    message += `PESQUISA — cenário hipotético ${t.label} na equação PREVENT+SDI: DCV total ${f(t.risks.total_cvd)}%; AVC ${f(t.risks.stroke)}%. Contribuição social comparada ao SDI 1–3 na mesma equação: DCV ${t.deltaPp.total_cvd >= 0 ? "+" : ""}${f(t.deltaPp.total_cvd)} pontos percentuais; AVC ${t.deltaPp.stroke >= 0 ? "+" : ""}${f(t.deltaPp.stroke)} pontos percentuais. O cenário não foi inferido do CEP e não é risco territorial validado para Recife. `;
+  }
+  return message + "Equações publicadas nos EUA; calibração nesta população e extensão territorial brasileira ainda não validadas nesta pesquisa.";
 }
 
 function categorizeSelectedRecommendations(recommendations) {
@@ -887,11 +606,13 @@ function buildReport() {
     `${imcText}`,
     `${formatLipidReportLine(castelliData)}`,
     `${castelliData.summary}`,
-    `${riskData ? `Risco cardiovascular: ${riskData.cardio.level} (${riskData.cardio.estimate}) | Risco AVC: ${riskData.stroke.level} (${riskData.stroke.estimate})` : "Risco cardiovascular/AVC: não calculado"}`,
+    `${formatRiskBoxMessage(riskData)}`,
+    `Entradas PREVENT: PAS ${document.getElementById("prevent-sbp")?.value || "não informada"} mmHg; eTFG ${document.getElementById("prevent-egfr")?.value || "não informada"} mL/min/1,73 m²; diabetes ${document.getElementById("prevent-diabetes")?.value || "não informado"}; tabagismo ${document.getElementById("prevent-smoking")?.value || "não informado"}; DCV prévia ${document.getElementById("prevent-prior-cvd")?.value || "não informado"}; anti-hipertensivo ${document.getElementById("prevent-bp-treatment")?.value || "não informado"}; estatina ${document.getElementById("prevent-statin")?.value || "não informada"}.`,
+    "Referência: Khan et al., Circulation 2024; DOI 10.1161/CIRCULATIONAHA.123.067626. Equações S12A/S12D; horizonte 10 anos.",
     "",
     `Comorbidades/fatores: ${riskList}`,
     `Fatores de equidade e acesso: ${equitySummary}`,
-    `${riskData ? `Área (CEP) considerada no risco: ${riskData.socioeconomicData.description}` : "Área (CEP) considerada no risco: não foi possível estimar"}`,
+    `${riskData ? `Contexto geográfico do CEP: ${riskData.socioeconomicData.description}` : "Contexto geográfico do CEP: não foi possível estimar"}`,
     "",
     `Classificação de referência (CID-11/APS): ${clsText}`,
     "",
@@ -943,8 +664,8 @@ function updateReportPreview() {
 }
 
 function clearCurrentFormData() {
-  clearTimeout(cepLookupTimer);
-  cepResolutionState = { cep: "", status: "idle", data: null, error: "" };
+
+
   if (form) form.reset();
   classificationInput.value = "";
   classificationMatch.textContent = "";
@@ -961,7 +682,11 @@ function clearCurrentFormData() {
 
 function getSelectedComorbidities() {
   const checks = [...document.querySelectorAll(".comorbidity-input:checked")];
-  return checks.map((item) => item.value);
+  const selected = checks.map(item => item.value);
+  for (const [id,key] of [["prevent-diabetes","dm2"],["prevent-smoking","tabagismo"],["prevent-prior-cvd","dcv"]]) {
+    if (document.getElementById(id)?.value === "sim") selected.push(key);
+  }
+  return [...new Set(selected)];
 }
 
 function calcImc(weight, height) {
@@ -1321,3 +1046,5 @@ mountClassificationOptions();
 updateCatalogCount();
 updateReportPreview();
 setActiveStep(1);
+
+for (const field of document.querySelectorAll("[id^=prevent-]")) field.addEventListener("input", updateReportPreview);
