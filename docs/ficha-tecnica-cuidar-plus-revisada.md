@@ -16,8 +16,8 @@ O Cuidar+ apoia a organização da avaliação preventiva na atenção primária
 | Contribuição territorial | Acréscimo de 0–3 pontos por índice de infraestrutura | Cenários PREVENT+SDI, com diferença em pontos percentuais dentro da mesma equação |
 | CEP | Correspondência exata ou média de prefixo postal | Correspondência exata com CNEFE; multiplicidade de códigos setoriais informada |
 | Ausência de informação | Poderia resultar em zero ponto | Risco não calculado quando faltam preditores; território desconhecido não significa baixo risco |
-| Marcadores sociais individuais | Pontos por raça, deficiência, orientação e identidade | Não alteram a equação cardiovascular |
-| Atividade física e Castelli | Pontos positivos ou negativos | Sem acréscimo à equação PREVENT; razões lipídicas descritivas |
+| Marcadores sociais individuais | Pontos por raça, deficiência, orientação e identidade | Integram avaliação ampliada e são candidatos a preditores; contribuição adicional não estimada |
+| Atividade física e Castelli | Pontos positivos ou negativos | Integram avaliação ampliada; componentes lipídicos já presentes no PREVENT; extensão a estimar |
 | Categorias de risco | Baixo/moderado/alto por cortes locais | Probabilidades contínuas; sem novos cortes terapêuticos arbitrários |
 
 A interface web, a interface móvel e o relatório foram atualizados. A aplicação não converte automaticamente um CEP brasileiro em SDI. Essa conversão permanece pendente de harmonização geográfica, definição do construto e avaliação preditiva. Os cenários sociais são identificados como hipotéticos para pesquisa.
@@ -115,7 +115,7 @@ A literatura oferece modelos que integram área de residência por coeficientes 
 | Independência | Marcadores sociais e pontos legados | Não alteram o modelo base |
 | Termo social | Comparação de odds entre cenários e perfis | Razão consistente; acréscimo absoluto varia com o perfil |
 | Geografia | Contagem e soma da base CNEFE agregada | 9.050 CEPs; 4.338 multissetoriais; 643.590 endereços |
-| Regressão do software | Suíte automatizada do projeto | 47 testes aprovados na execução desta revisão |
+| Regressão do software | Suíte automatizada do projeto | 50 testes aprovados na execução desta revisão |
 | Validade preditiva em Recife | Exigiria eventos e seguimento | Não realizada: base ainda inexistente |
 
 Testes de software não medem desempenho clínico. As verificações geográficas confirmam consistência interna do processamento, não comprovam acurácia de todos os endereços no território. Não foram estimados AUC, calibração ou intervalos de confiança locais; números simulados não substituem eventos observados.
@@ -131,6 +131,18 @@ O tamanho amostral deve ser determinado pela precisão desejada para calibraçã
 Na avaliação, estimar discriminação apropriada ao tempo, calibração global e por faixas de risco, inclinação de calibração, erro de predição/Brier e utilidade clínica em limiares previamente justificados. Incorporar censura e risco competitivo de óbito conforme o estimando. Obter intervalos de confiança e considerar dependência por território/unidade de saúde. Examinar desempenho por sexo, idade e privação sem tratar subgrupos pequenos como conclusivos.
 
 Comparar o PREVENT original, uma eventual recalibração local e a extensão territorial. Se coeficientes forem estimados usando a coorte, essa etapa é desenvolvimento, não validação externa. Usar reamostragem para otimismo e reservar avaliação temporal/geográfica independente. Não selecionar pesos ou pontos de corte pelo melhor resultado aparente na mesma amostra. Relatar segundo TRIPOD+AI, aplicável também a modelos de regressão [14].
+
+### 8.1. Marcadores sociais, atividade física e Castelli no modelo de pesquisa
+
+Por definição do pesquisador, esses três grupos integram a avaliação ampliada de risco. O aplicativo passou a apresentá-los explicitamente junto à estimativa, inclusive quando não há dados suficientes para calcular PREVENT. O motor de pesquisa preserva seus valores como variáveis candidatas; o coeficiente ainda não estimado é representado por ausência de valor, não por zero. Essa inclusão não constitui uma nova probabilidade validada.
+
+Atividade física deve ser medida por frequência, duração e intensidade. A categoria informada no formulário é exploratória; o instrumento definitivo deve distinguir atividade física de tempo sedentário. A recomendação aeróbica adulta da OMS admite 150 minutos de intensidade moderada ou 75 minutos vigorosos por semana, ou combinação equivalente [15]. Associação com eventos não autoriza converter essa recomendação em um número fixo de pontos percentuais.
+
+Marcadores sociais individuais são coletados para investigar desigualdades, barreiras de acesso e heterogeneidade do desempenho. Devem ser acompanhados por medidas diretas de exposições sociais, como discriminação e dificuldades de acesso, em vez de presumir essas experiências pela identidade. A padronização ACC/AHA de determinantes sociais oferece uma base institucional para operacionalizar essas variáveis [16]. Não se atribui automaticamente risco adicional a uma orientação sexual ou identidade de gênero.
+
+Castelli I (total/HDL) e II (LDL/HDL) são calculados separadamente quando existem os respectivos exames. QRISK3 utiliza a razão total/HDL em sua própria equação [12]; esse coeficiente não deve ser transplantado para PREVENT. Como PREVENT já contém colesterol total e HDL em transformações específicas, a contribuição adicional das razões deve ser examinada evitando redundância e instabilidade.
+
+O plano de análise deve comparar: modelo clínico original; extensão por atividade física; extensão social; representação lipídica alternativa; e modelo conjunto previamente especificado. Não somar resultados desses modelos. Estimar a contribuição condicional de cada grupo, controlar otimismo e avaliar calibração e desempenho fora da amostra de ajuste. Até existirem desfechos, o aplicativo não apresenta um percentual fictício para essa extensão.
 
 ## 9. Reprodutibilidade e pendências
 
@@ -167,6 +179,10 @@ Permanecem pendentes: conferência independente integral dos coeficientes com o 
 13. University of Wisconsin School of Medicine and Public Health. Neighborhood Atlas: Area Deprivation Index. https://www.neighborhoodatlas.medicine.wisc.edu/
 
 14. Collins GS et al. TRIPOD+AI statement: updated guidance for reporting clinical prediction models that use regression or machine learning methods. BMJ. 2024;385:e078378. DOI: 10.1136/bmj-2023-078378.
+
+15. World Health Organization. WHO guidelines on physical activity and sedentary behaviour: at a glance. 2020. https://www.who.int/publications/i/item/9789240014886
+
+16. ACC/AHA. 2024 Key Data Elements and Definitions for Social Determinants of Health in Cardiology. Circulation: Cardiovascular Quality and Outcomes. DOI: 10.1161/HCQ.0000000000000133. https://www.ahajournals.org/doi/10.1161/HCQ.0000000000000133
 
 Fontes consultadas durante a revisão de setembro de 2026. As referências sustentam os métodos citados; não devem ser interpretadas como endosso dos autores ao Cuidar+.
 

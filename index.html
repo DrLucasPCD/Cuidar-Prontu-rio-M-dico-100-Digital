@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="./styles-pediatric.css?v=4" />
     <link rel="stylesheet" href="./styles-aga.css?v=1" />
+    <link rel="stylesheet" href="./pediatric-design.css?v=1" />
   </head>
   <body>
     <div class="layout">
@@ -98,9 +99,9 @@
                     Atividade física
                     <select id="physical-activity">
                       <option value="">Não informado</option>
-                      <option value="regular">Regular (≥150 min/semana)</option>
-                      <option value="insuficiente">Insuficiente (&lt;150 min/semana)</option>
-                      <option value="sedentario">Sedentário/inativo</option>
+                      <option value="regular">Regular (≥150 min moderada ou ≥75 min vigorosa/semana)</option>
+                      <option value="insuficiente">Insuficiente (abaixo da recomendação aeróbica)</option>
+                      <option value="sedentario">Inativo (atividade física)</option>
                     </select>
                   </label>
                   <label>
@@ -222,7 +223,7 @@
               </ul>
             </section>
 
-            <section class="panel" id="risk-methodology"><h2>Metodologia e situação da validação</h2><p>PREVENT, equações simplificadas de 10 anos (Khan et al., Circulation 2024, tabelas S12A e S12D). O modelo utiliza idade, sexo conforme equação publicada, pressão sistólica, colesterol total, HDL, IMC, eTFG, diabetes, tabagismo e tratamentos. Não se aplicam pontos adicionais por raça, identidade de gênero, orientação sexual, deficiência, atividade física ou índices de Castelli.</p><p>O módulo de pesquisa permite comparar categorias do SDI pela equação publicada. A contribuição social é calculada em pontos percentuais contra a categoria de referência dentro do mesmo modelo. Não representa efeito causal nem ajuste validado pelo CEP brasileiro. O risco base e o cenário social são apresentados separadamente.</p><p>CEP: correspondência exata com os endereços de domicílios particulares do CNEFE/IBGE 2022. A abrangência de múltiplos setores é informada. Foram retirados do cálculo os pesos arbitrários de infraestrutura, os cortes 85/70/55 e a aproximação por prefixo postal. Ausência de dado não representa baixo risco.</p><p>Esta pesquisa ainda não dispõe de coorte com desfechos. Verificação das equações e análise de sensibilidade não equivalem à validação preditiva local. Não há categorias clínicas arbitrárias para estas probabilidades.</p><ul><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10910659/">PREVENT: estudo original</a></li><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12849047/">Avaliação brasileira PREVENT/WHO</a></li><li><a href="https://cidacs.bahia.fiocruz.br/ibp/indice/">Fiocruz: Índice Brasileiro de Privação</a></li><li><a href="https://researchdata.gla.ac.uk/980/">IBP: dados e documentação originais</a></li></ul></section>
+            <section class="panel" id="risk-methodology"><h2>Metodologia e situação da validação</h2><p>PREVENT, equações simplificadas de 10 anos (Khan et al., Circulation 2024, tabelas S12A e S12D). O modelo utiliza idade, sexo conforme equação publicada, pressão sistólica, colesterol total, HDL, IMC, eTFG, diabetes, tabagismo e tratamentos. Marcadores sociais individuais, atividade física e Castelli integram a avaliação ampliada do risco e são preditores candidatos do modelo de pesquisa. A contribuição percentual adicional permanece não estimada; não se atribuem pesos arbitrários. Colesterol total e HDL já participam da equação PREVENT.</p><p>O módulo de pesquisa permite comparar categorias do SDI pela equação publicada. A contribuição social é calculada em pontos percentuais contra a categoria de referência dentro do mesmo modelo. Não representa efeito causal nem ajuste validado pelo CEP brasileiro. O risco base e o cenário social são apresentados separadamente.</p><p>CEP: correspondência exata com os endereços de domicílios particulares do CNEFE/IBGE 2022. A abrangência de múltiplos setores é informada. Foram retirados do cálculo os pesos arbitrários de infraestrutura, os cortes 85/70/55 e a aproximação por prefixo postal. Ausência de dado não representa baixo risco.</p><p>Esta pesquisa ainda não dispõe de coorte com desfechos. Verificação das equações e análise de sensibilidade não equivalem à validação preditiva local. Não há categorias clínicas arbitrárias para estas probabilidades.</p><ul><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC10910659/">PREVENT: estudo original</a></li><li><a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC12849047/">Avaliação brasileira PREVENT/WHO</a></li><li><a href="https://cidacs.bahia.fiocruz.br/ibp/indice/">Fiocruz: Índice Brasileiro de Privação</a></li><li><a href="https://researchdata.gla.ac.uk/980/">IBP: dados e documentação originais</a></li></ul></section>
 
             <section class="panel" id="final-report">
               <h2>Documento do atendimento</h2>
@@ -292,10 +293,11 @@
     <script src="./data/who-growth-data.js"></script>
     <script src="./pediatric-core.js?v=2"></script>
     <script src="./pediatrics.js?v=6"></script>
+    <script src="./pediatric-design.js?v=1"></script>
     <script src="./data/aga-criteria.js?v=1"></script>
     <script src="./cognitive-core.js?v=1"></script>
     <script src="./aga-core.js?v=1"></script>
     <script src="./aga.js?v=1"></script>
-    <script src="./data/prevent-coefficients.js"></script><script src="./cardiovascular-core.js"></script><script src="./data/recife-cep-sectors.js"></script><script src="./app.js?v=4"></script>
+    <script src="./data/prevent-coefficients.js"></script><script src="./cardiovascular-core.js"></script><script src="./research-risk-core.js"></script><script src="./data/recife-cep-sectors.js"></script><script src="./app.js?v=4"></script>
   </body>
 </html>

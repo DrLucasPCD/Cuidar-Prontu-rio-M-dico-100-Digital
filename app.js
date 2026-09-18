@@ -329,35 +329,12 @@ function getNumberFromInput(input) {
 }
 
 function calcCastelliIndices() {
-  const total = getNumberFromInput(totalCholesterolInput);
-  const hdl = getNumberFromInput(hdlCholesterolInput);
-  const ldl = getNumberFromInput(ldlCholesterolInput);
-  if (!total || !hdl || !ldl) {
-    return {
-      complete: false,
-      total,
-      hdl,
-      ldl,
-      cardioPoints: 0,
-      strokePoints: 0,
-      summary: "Índices de Castelli serão calculados com colesterol total, HDL e LDL."
-    };
-  }
-
-  const castelli1 = total / hdl;
-  const castelli2 = ldl / hdl;
-
-  return {
-    complete: true,
-    total,
-    hdl,
-    ldl,
-    castelli1,
-    castelli2,
-    cardioPoints: 0,
-    strokePoints: 0,
-    summary: `Castelli I: ${castelli1.toFixed(2)} (descritivo) | Castelli II: ${castelli2.toFixed(2)} (descritivo)`
-  };
+  const total=getNumberFromInput(totalCholesterolInput), hdl=getNumberFromInput(hdlCholesterolInput), ldl=getNumberFromInput(ldlCholesterolInput);
+  const {castelliI,castelliII}=ResearchRiskCore.assess({totalCholesterol:total,hdl,ldl}).lipids;
+  const f=n=>n==null?"não calculado":n.toFixed(2);
+  return {complete:Boolean(total&&hdl&&ldl),total,hdl,ldl,castelli1:castelliI,castelli2:castelliII,
+    cardioPoints:0,strokePoints:0,
+    summary:`Castelli I: ${f(castelliI)} | Castelli II: ${f(castelliII)}. Componentes da avaliação ampliada; contribuição incremental ao risco ainda não estimada.`};
 }
 
 function formatLipidReportLine(castelliData) {
@@ -401,19 +378,34 @@ function calcCardioAndStrokeRisk({sex, age, imc, cep}) {
   const result = CardiovascularCore.calculate(input);
   const scenario = document.getElementById("prevent-social-scenario")?.value;
   const social = scenario ? CardiovascularCore.socialScenarios(input).find(x => x.sdiDecile === Number(scenario)) : null;
-  return {result, social, socioeconomicData:getSocioeconomicByCep(cep)};
+  const research = ResearchRiskCore.assess({...input,
+    ldl:getNumberFromInput(ldlCholesterolInput), physicalActivity:physicalActivityInput?.value,
+    isBlack:blackInput?.checked, isPcd:pcdInput?.checked,
+    sexualOrientation:sexualOrientationInput?.value, genderIdentity:genderIdentityInput?.value});
+  return {result, social, research, socioeconomicData:getSocioeconomicByCep(cep)};
+}
+function formatExpandedRisk(research) {
+  if (!research) return "";
+  const activity = {regular:"atividade regular informada", insuficiente:"atividade insuficiente: fator modificável a abordar", sedentario:"inatividade informada: fator modificável a abordar"};
+  const markers=[];
+  if(research.social.blackReported) markers.push("pessoa negra");
+  if(research.social.disabilityReported) markers.push("pessoa com deficiência");
+  if(research.social.sexualOrientation) markers.push(`orientação sexual: ${research.social.sexualOrientation}`);
+  if(research.social.genderIdentity) markers.push(`identidade de gênero: ${research.social.genderIdentity}`);
+  const f=n=>n==null?"não calculado":n.toFixed(2).replace(".",",");
+  return ` Avaliação ampliada do risco — pesquisa: ${activity[research.activity.reportedCategory] || "atividade física não informada"}. Castelli I ${f(research.lipids.castelliI)}; Castelli II ${f(research.lipids.castelliII)}. Marcadores sociais registrados: ${markers.join("; ") || "não informados"}. Investigar barreiras de acesso e discriminação, sem presumir exposição pela identidade. Esses componentes integram a avaliação e são preditores candidatos da pesquisa; seu acréscimo percentual ainda não foi estimado. Colesterol total e HDL já participam do PREVENT; Castelli requer avaliação de contribuição adicional para evitar duplicação.`;
 }
 function formatRiskBoxMessage(riskData) {
   if (!riskData) return "PREVENT: informe os dados clínicos para calcular o risco em 10 anos.";
   const r = riskData.result;
-  if (!r.ok) return "PREVENT não calculado: " + r.errors.join("; ") + ".";
+  if (!r.ok) return "PREVENT não calculado: " + r.errors.join("; ") + "." + formatExpandedRisk(riskData.research);
   const f = n => n.toFixed(2).replace(".", ",");
   let message = `PREVENT base — risco em 10 anos: DCV total ${f(r.risks.total_cvd)}%; ASCVD ${f(r.risks.ascvd)}%; insuficiência cardíaca ${f(r.risks.heart_failure)}%; AVC ${f(r.risks.stroke)}%. Os desfechos se sobrepõem e não devem ser somados. `;
   if (riskData.social) {
     const t = riskData.social;
     message += `PESQUISA — cenário hipotético ${t.label} na equação PREVENT+SDI: DCV total ${f(t.risks.total_cvd)}%; AVC ${f(t.risks.stroke)}%. Contribuição social comparada ao SDI 1–3 na mesma equação: DCV ${t.deltaPp.total_cvd >= 0 ? "+" : ""}${f(t.deltaPp.total_cvd)} pontos percentuais; AVC ${t.deltaPp.stroke >= 0 ? "+" : ""}${f(t.deltaPp.stroke)} pontos percentuais. O cenário não foi inferido do CEP e não é risco territorial validado para Recife. `;
   }
-  return message + "Equações publicadas nos EUA; calibração nesta população e extensão territorial brasileira ainda não validadas nesta pesquisa.";
+  return message + "Equações publicadas nos EUA; calibração nesta população e extensão territorial brasileira ainda não validadas nesta pesquisa." + formatExpandedRisk(riskData.research);
 }
 
 function categorizeSelectedRecommendations(recommendations) {
