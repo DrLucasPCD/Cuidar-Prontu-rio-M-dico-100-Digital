@@ -68,18 +68,12 @@ body[data-care-mode] .mh-shortcut {
   margin-top: 0;
 }
 
-.mh-sources, .mh-file {
+.mh-sources {
   font-size: 0.9em;
 }
 
 .mh-body a {
   color: #04556b;
-}
-
-.mh-file {
-  display: grid;
-  gap: 6px;
-  justify-items: start;
 }
 
 body[data-care-mode] .mh-body fieldset {

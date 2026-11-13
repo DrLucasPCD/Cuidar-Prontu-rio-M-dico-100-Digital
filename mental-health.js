@@ -17,6 +17,28 @@
     "Acho que é fácil descobrir o que alguém está pensando ou sentindo apenas olhando para o rosto da pessoa.",
     "Acho difícil entender as intenções das pessoas."
   ];
+  const asrsPartA = [
+    "Com que frequência você deixa um projeto pela metade depois de já ter feito as partes mais difíceis?",
+    "Com que frequência você tem dificuldade para fazer um trabalho que exige organização?",
+    "Com que frequência você tem dificuldade para lembrar de compromissos ou obrigações?",
+    "Quando você precisa fazer algo que exige muita concentração, com que frequência você evita ou adia o início?",
+    "Com que frequência você fica se mexendo na cadeira ou balançando as mãos ou os pés quando precisa ficar sentado(a) por muito tempo?",
+    "Com que frequência você se sente ativo(a) demais e necessitando fazer coisas, como se estivesse “com um motor ligado”?"
+  ];
+  const asrsPartB = [
+    "Com que frequência você comete erros bobos por falta de atenção quando tem de trabalhar num projeto chato ou difícil?",
+    "Com que frequência você tem dificuldade para manter a atenção quando está fazendo um trabalho chato ou repetitivo?",
+    "Com que frequência você tem dificuldade para se concentrar no que as pessoas dizem, mesmo quando elas estão falando diretamente com você?",
+    "Com que frequência você coloca as coisas fora do lugar ou tem dificuldade de encontrar as coisas em casa ou no trabalho?",
+    "Com que frequência você se distrai com atividades ou barulho à sua volta?",
+    "Com que frequência você se levanta da cadeira em reuniões ou em outras situações onde deveria ficar sentado(a)?",
+    "Com que frequência você se sente inquieto(a) ou agitado(a)?",
+    "Com que frequência você tem dificuldade para sossegar e relaxar quando tem tempo livre para você?",
+    "Com que frequência você se pega falando demais em situações sociais?",
+    "Quando você está conversando, com que frequência você se pega terminando as frases das pessoas antes delas?",
+    "Com que frequência você tem dificuldade para esperar nas situações onde cada um tem a sua vez?",
+    "Com que frequência você interrompe os outros quando eles estão ocupados?"
+  ];
   const dassItems = [
     "Achei difícil me acalmar.",
     "Senti minha boca seca.",
@@ -82,15 +104,10 @@
       ${clinical("mh-aq-suspicion", "Persiste suspeita clínica de autismo?", "Considere a história do desenvolvimento e informações de familiares ou outros informantes.")}
     `)}
     ${scale("asrs-18", "ASRS-18", "Rastreio de TDAH em adultos · 18 itens", `
-      <p>Transcreva, na ordem, as respostas da versão ASRS v1.1 com 6 itens na Parte A e 12 na Parte B. Use como referência os últimos seis meses.</p>
-      <div class="mh-file">
-        <label for="mh-asrs-file">Consultar seu formulário em PDF neste dispositivo</label>
-        <input type="file" id="mh-asrs-file" accept="application/pdf,.pdf" />
-        <a id="mh-asrs-open" target="_blank" rel="noopener noreferrer" hidden>Abrir PDF selecionado</a>
-      </div>
-      <p class="mh-sources">${link(asrsSource, "Formulário oficial (NYU Langone)")} · ${link(asrsGuideline, "Diretriz NICE NG87")}</p>
-      <fieldset><legend>Parte A · Rastreio</legend>${items(Array(6).fill("Resposta do formulário"), asrsOptions)}</fieldset>
-      <fieldset><legend>Parte B · Sintomas complementares</legend>${items(Array(12).fill("Resposta do formulário"), asrsOptions, 6)}</fieldset>
+      <p>Marque a frequência de cada sintoma nos últimos seis meses.</p>
+      <p class="mh-sources">${link(asrsSource, "ASRS v1.1 (NYU Langone)")} · ${link(asrsGuideline, "Diretriz NICE NG87")}</p>
+      <fieldset><legend>Parte A · Rastreio</legend>${items(asrsPartA, asrsOptions)}</fieldset>
+      <fieldset><legend>Parte B · Sintomas complementares</legend>${items(asrsPartB, asrsOptions, asrsPartA.length)}</fieldset>
       ${clinical("mh-asrs-criteria", "A avaliação clínica sustenta encaminhamento por suspeita de TDAH?", "Considere sintomas desde a infância, persistência, prejuízo funcional pelo menos moderado em mais de um contexto e outras explicações possíveis.")}
     `)}
     ${scale("dass-21", "DASS-21", "Depressão, ansiedade e estresse · 21 itens", `
@@ -103,23 +120,6 @@
   `);
 
   const ageField = document.getElementById("age");
-  const fileField = section.querySelector("#mh-asrs-file");
-  const fileLink = section.querySelector("#mh-asrs-open");
-  let fileUrl;
-  function clearFile() {
-    if (fileUrl) URL.revokeObjectURL(fileUrl);
-    fileUrl = null;
-    fileLink.removeAttribute("href");
-    fileLink.hidden = true;
-  }
-  fileField.addEventListener("change", () => {
-    clearFile();
-    const file = fileField.files[0];
-    if (!file) return;
-    fileUrl = URL.createObjectURL(file.slice(0, file.size, "application/pdf"));
-    fileLink.href = fileUrl;
-    fileLink.hidden = false;
-  });
 
   const scales = [...section.querySelectorAll("[data-scale]")].map((panel) => ({
     panel,
@@ -216,10 +216,6 @@
 
   function reset(scale) {
     [...scale.answers, ...scale.clinical].forEach((field) => { field.value = ""; });
-    if (scale.id === "asrs-18") {
-      fileField.value = "";
-      clearFile();
-    }
     render(scale);
   }
 
