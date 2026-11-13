@@ -584,6 +584,7 @@ function buildReport() {
   const examLines = buildExamCategoryLines(categorized);
   const imcText = imcBox.textContent || "IMC não calculado";
   const generatedAt = formatNowPtBr();
+  const mentalHealthLines = window.MentalHealth?.reportLines() || [];
 
   return [
     "CUIDAR+ | GUIA EDUCATIVO DE PREVENÇÃO EM SAÚDE",
@@ -608,6 +609,7 @@ function buildReport() {
     "",
     `Classificação de referência (CID-11/APS): ${clsText}`,
     "",
+    ...(mentalHealthLines.length ? ["Escalas de saúde mental", ...mentalHealthLines, ""] : []),
     "Exames/prevenções selecionados:",
     ...(examLines.length ? examLines : ["  Nenhuma recomendação selecionada.", ""]),
     "Observações gerais:",
@@ -659,6 +661,7 @@ function clearCurrentFormData() {
 
 
   if (form) form.reset();
+  window.MentalHealth?.reset();
   classificationInput.value = "";
   classificationMatch.textContent = "";
   document.getElementById("notes").value = "";
@@ -899,6 +902,7 @@ pdfBtn.addEventListener("click", () => {
 });
 
 document.getElementById("notes").addEventListener("input", updateReportPreview);
+document.getElementById("mental-health")?.addEventListener("mental-health-change", updateReportPreview);
 document.getElementById("sex").addEventListener("change", updateReportPreview);
 document.getElementById("age").addEventListener("input", updateReportPreview);
 document.getElementById("weight").addEventListener("input", updateReportPreview);

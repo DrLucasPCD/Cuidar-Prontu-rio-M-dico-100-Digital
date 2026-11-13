@@ -29,7 +29,7 @@
   const adultSources = $('.side-column .refs');
   const agaRoot = $('#aga-content');
   const agaCards = [...document.querySelectorAll('#aga-form > section')];
-  const adultCards = [adultConsult, adultClassification, adultPrivacy, $('#risk-methodology')].filter(Boolean);
+  const adultCards = [adultConsult, $('#mental-health'), adultClassification, adultPrivacy, $('#risk-methodology')].filter(Boolean);
   let sequence = 0;
   const accordion = (card, expanded) => {
     card.id ||= `care-section-${++sequence}`;
@@ -80,9 +80,20 @@
   body.append(tabs);
   const openSection = entry => {
     setView('sections'); body.dataset.careSection=entry.card.id; entry.expand(true);
+    showCurrentSection();
     document.querySelectorAll('.care-sidebar-nav button').forEach(b => b.classList.toggle('active',b.dataset.target === entry.card.id));
     entry.card.scrollIntoView({behavior:'smooth',block:'start'});
   };
+  const mentalHealth = adults.find(entry => entry.card.id === 'mental-health');
+  if (mentalHealth) {
+    const button = create('button', 'mh-shortcut no-print', mentalHealth.title);
+    button.type = 'button';
+    button.addEventListener('click', () => {
+      openSection(mentalHealth);
+      mentalHealth.card.querySelector('.care-section-toggle').focus({preventScroll:true});
+    });
+    $('#clinical-form').after(button);
+  }
   for (const [flow, config] of Object.entries(flows)) {
     const list = create('section', `care-section-list care-${flow}-only no-print`, '<h1>Seções da avaliação</h1><p>Preencha as seções conforme o atendimento.</p>');
     const sidebar = create('nav', `care-sidebar-nav care-${flow}-only no-print`); sidebar.setAttribute('aria-label', `Seções: ${flow === 'adult' ? 'Preventivo adulto' : 'Avaliação geriátrica ampla'}`);

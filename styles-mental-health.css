@@ -1,0 +1,160 @@
+body[data-care-mode] .mh-shortcut {
+  margin-top: 16px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid #bdd8df;
+  border-radius: 7px;
+  background: #f7fbfc;
+  color: #04556b;
+}
+
+.mh-scale {
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  overflow: clip;
+}
+
+.mh-scale > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  cursor: pointer;
+  background: #f7fafb;
+}
+
+.mh-scale > summary::-webkit-details-marker {
+  display: none;
+}
+
+.mh-scale > summary::after {
+  content: "›";
+  color: var(--brand);
+  font-size: 1.35em;
+  line-height: 1;
+}
+
+.mh-scale[open] > summary::after {
+  transform: rotate(90deg);
+}
+
+.mh-scale > summary:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -3px;
+}
+
+.mh-scale small {
+  display: block;
+  margin-top: 3px;
+  color: #536a8a;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.mh-progress {
+  margin-left: auto;
+  color: #04556b;
+  font-size: 0.88em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mh-body {
+  padding: 14px;
+  line-height: 1.5;
+}
+
+.mh-body > p:first-child {
+  margin-top: 0;
+}
+
+.mh-sources, .mh-file {
+  font-size: 0.9em;
+}
+
+.mh-body a {
+  color: #04556b;
+}
+
+.mh-file {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+body[data-care-mode] .mh-body fieldset {
+  min-inline-size: 0;
+  margin: 16px 0;
+}
+
+.mh-items {
+  margin: 12px 0;
+  padding-left: 1.65rem;
+}
+
+.mh-items > li {
+  padding: 9px 0;
+  border-bottom: 1px solid #e6edf3;
+}
+
+.mh-items > li::marker {
+  color: #536a8a;
+  font-weight: 600;
+}
+
+.mh-items label, .mh-clinical {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.mh-clinical {
+  margin-top: 14px;
+}
+
+.mh-clinical select {
+  justify-self: start;
+  min-width: 140px;
+}
+
+body[data-care-mode] .mh-items select {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 8px;
+}
+
+.mh-result {
+  margin-top: 16px;
+}
+
+.mh-result p {
+  margin: 0;
+}
+
+.mh-result p + p {
+  margin-top: 5px;
+}
+
+body[data-care-mode] .mh-result.mh-urgent {
+  background: #fff1f1;
+  border-color: #e8b8b8;
+  color: #821f25;
+}
+
+.mh-urgent p:first-child {
+  font-weight: 700;
+}
+
+.mh-actions {
+  display: flex;
+}
+
+@media (max-width: 460px) {
+  .mh-body, .mh-scale > summary {
+    padding: 10px;
+  }
+
+  body[data-care-mode] .mh-body fieldset {
+    padding-inline: 8px;
+  }
+}
